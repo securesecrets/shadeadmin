@@ -7,7 +7,7 @@ Shade Admin is used to centrally authorize the owners of a contracts. A contract
 The Shade Admin should contain the structure:
 
 |contractHash|MsgName|CallerAddress|
-|-|-|
+|-|-|-|
 |contractName1||`authorizedCallerAddress1``authorizedCallerAddress2`|
 |contractName2||`authorizedCallerAddress1`|
 |contractName3||`authorizedCallerAddress1``authorizedCallerAddress2`|
