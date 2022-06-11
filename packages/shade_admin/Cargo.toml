@@ -1,0 +1,30 @@
+[package]
+name = "shade_admin"
+version = "0.1.0"
+authors = ["sbeem <sbeem@pm.me>", "scrtreddev <scrtredev@protonmail.com", "hoomp <flammable.shower939@anonaddy.me>"]
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["storage"]
+# for quicker tests, cargo test --lib
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+debug-print = ["cosmwasm-std/debug-print"]
+storage = ["secret-storage-plus"]
+
+[dependencies]
+cosmwasm-std = { package = "secret-cosmwasm-std", version = "0.10.0" }
+cosmwasm-storage = { package = "secret-cosmwasm-storage", version = "0.10.0" }
+cosmwasm-schema = "0.10.1"
+schemars = { version = "0.7" }
+secret-toolkit = { version = "0.2", features = ["permit"] }
+
+serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0" }
+snafu = { version = "0.6.3" }
+
+secret-storage-plus = { git = "https://github.com/securesecrets/secret-storage-plus", tag = "v1.0.0", optional = true }
+fadroma = { git = "https://github.com/hackbg/fadroma", branch = "v100", features = [] }

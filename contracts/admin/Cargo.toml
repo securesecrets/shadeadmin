@@ -1,0 +1,38 @@
+[package]
+name = "admin"
+version = "0.2.0"
+authors = ["sbeem <sbeem@pm.me>", "scrtreddev <scrtredev@protonmail.com", "hoomp <flammable.shower939@anonaddy.me>"]
+edition = "2021"
+
+exclude = [
+  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
+  "contract.wasm",
+  "hash.txt",
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+# for quicker tests, cargo test --lib
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["shade_admin/backtraces"]
+
+[dependencies]
+cosmwasm-std = { package = "secret-cosmwasm-std", version = "0.10.0" }
+cosmwasm-storage = { package = "secret-cosmwasm-storage", version = "0.10.0" }
+secret-toolkit = { version = "0.2", features = ["permit"] }
+
+schemars = "0.7"
+serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+snafu = { version = "0.6.3" }
+shade_admin = { path = "../../packages/shade_admin" }
+
+
+[dev_dependencies]
+cosmwasm-schema = { git = "https://github.com/enigmampc/SecretNetwork", tag = "v1.0.4-debug-print" }
+
+mockall = "0.10.2"

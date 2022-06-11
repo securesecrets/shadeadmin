@@ -1,0 +1,19 @@
+[workspace]
+members = [
+  "packages/shade_admin_ensemble",
+  "packages/shade_admin",
+  "packages/shade_admin_integration",
+
+  "contracts/admin",
+]
+
+[profile.release]
+opt-level = 3
+debug = false
+rpath = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+panic = 'abort'
+incremental = false
+overflow-checks = true
