@@ -1,73 +1,127 @@
-
-# Mock Band Oracle Contract
+# Admin Auth Contract
 * [Introduction](#Introduction)
 * [Sections](#Sections)
     * [Init](#Init)
     * [Admin](#Admin)
         * Messages
-            * [UpdateConfig](#UpdateConfig)
-            * [UpdateMintLimit](#UpdateMintLimit)
-            * [RegisterAsset](#RegisterAsset)
-            * [RemoveAsset](#RemoveAsset)
+            * [AddContract](#AddContract)
+            * [RemoveContract](#RemoveContract)
+            * [AddAuthorization](#AddAuthorization)
+            * [RemoveAuthorization](#RemoveAuthorization)
+            * [AddSuper](#AddSuper)
+            * [RemoveSuper](#RemoveSuper)
     * [User](#User)
-        * Messages
-          * [UpdateSymbolPrice](#UpdateSymbolPrice)
         * Queries
-            * [GetReferenceData](#GetReferenceData)
-            * [GetReferenceDataBulk](#GetReferenceDataBulk)
+            * [GetSuperAdmins](#GetSuperAdmins)
+            * [GetContracts](#GetContracts)
+            * [GetAuthorizedUsers](#GetAuthorizedUsers)
+            * [ValidateAdminPermission](#ValidateAdminPermission)
 # Introduction
-Contract responsible for mimicking the desired behavior of a band oracle contract.
+This contract is used to centrally authorize the owners of a contracts. A contract can query the Shade Admin Contract to confirm whether the original caller has the relevant permissions against the calling contract.
 
 # Sections
 
-## User
+## Admin
 
 ### Messages
-#### UpdateSymbolPrice
+#### AddContract
 ##### Request
-Updates current data of asset.
-| Name         | Type    | Description                                              | optional |
-|--------------|---------|----------------------------------------------------------|----------|
-| base_symbol  | String  | Symbol of asset to retrieve price of                     | no       |
-| quote_symbol | String  | Symbol of the asset which the desired asset is quoted in | no       |
-| rate         | Uint128 | Current rate of asset                                    | no       |
-| last_updated | u64     | Timestamp of time when price is last updated             | yes      |
+Add a contract.
+| Name          | Type   | Description                  | optional |
+|---------------|--------|------------------------------|----------|
+| contract_hash | String | Hash of contract to be added | no       |
+
+#### RemoveContract
+##### Request
+Remove a contract.
+| Name          | Type   | Description                    | optional |
+|---------------|--------|--------------------------------|----------|
+| contract_hash | String | Hash of contract to be removed | no       |
+
+#### AddAuthorization
+##### Request
+Authorize a user with admin perms for the inputted contract.
+| Name          | Type   | Description                                  | optional |
+|---------------|--------|----------------------------------------------|----------|
+| contract_hash | String | Hash of contract                             | no       |
+| admin_address | String | Address of user to be given admin privileges | no       |
+
+#### RemoveAuthorization
+##### Request
+Deauthorize a user for the inputted contract.
+| Name          | Type   | Description                              | optional |
+|---------------|--------|------------------------------------------|----------|
+| contract_hash | String | Hash of contract                         | no       |
+| admin_address | String | Address of user to lose admin privileges | no       |
+
+#### AddSuper
+##### Request
+Authorize a user to be given super-admin perms.
+| Name          | Type   | Description                                        | optional |
+|---------------|--------|----------------------------------------------------|----------|
+| super_address | String | Address of user to be given super-admin privileges | no       |
+
+#### RemoveSuper
+##### Request
+Deauthorize a user from super-admin perms.
+| Name          | Type   | Description                                    | optional |
+|---------------|--------|------------------------------------------------|----------|
+| super_address | String | Address of user to lose super-admin privileges | no       |
+
+
+## User
 
 ### Queries
 
-#### GetReferenceData
-Gets the price data of the queried asset.
-##### Request
-| Name         | Type    | Description                                              | optional |
-|--------------|---------|----------------------------------------------------------|----------|
-| base_symbol  | String  | Symbol of asset to retrieve price of                     | no       |
-| quote_symbol | String  | Symbol of the asset which the desired asset is quoted in | no       |
+#### GetSuperAdmins
+Gets a list of the super-admin addresses.
 ##### Response
 ```json
 {
-  "ReferenceData": {
-    "rate": "Uint128 of the queried asset rate",
-    "last_updated_base": "u64 of the block time",
-    "last_updated_quote": "u64 of the block time"
+  "SuperAdminResponse": {
+    "super_admins": "Vector of strings of the super-admin addresses"
   }
 }
 ```
 
-#### GetReferenceDataBulk
-Gets a vector of the the price data of the queried asset.
-##### Request
-| Name         | Type    | Description                                              | optional |
-|--------------|---------|----------------------------------------------------------|----------|
-| base_symbol  | String  | Symbol of asset to retrieve price of                     | no       |
-| quote_symbol | String  | Symbol of the asset which the desired asset is quoted in | no       |
+#### GetContracts
+Gets a list of all of the contracts and the users' that have perms over them.
 ##### Response
 ```json
 {
-  "ReferenceData": {
-    "rate": "Uint128 of the queried asset rate",
-    "last_updated_base": "u64 of the block time",
-    "last_updated_quote": "u64 of the block time"
+  "ContractsResponse": {
+    "contracts": "Vector containing tuples of the contract hashes and a vector of strings of the authorized users"
   }
-  ...
+}
+```
+
+#### GetAuthorizedUsers
+Gets a vector of strings of the users' that have perms for the inputted contract hash.
+##### Request
+| Name          | Type   | Description      | optional |
+|---------------|--------|------------------|----------|
+| contract_hash | String | Hash of contract | no       |
+##### Response
+```json
+{
+  "AuthorizedUsersResponse": {
+    "authorized_users": "Vector of strings of the authorized users",
+  }
+}
+```
+
+#### ValidateAdminPermission
+Determines if inputted admin_address has admin perms over contract.
+##### Request
+| Name          | Type   | Description                     | optional |
+|---------------|--------|---------------------------------|----------|
+| contract_hash | String | Hash of contract                | no       |
+| admin_address | String | Address of user to be validated | no       |
+##### Response
+```json
+{
+  "ValidateAdminPermissionResponse": {
+    "error_msg": "Option determining if user has perms",
+  }
 }
 ```

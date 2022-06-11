@@ -7,55 +7,33 @@ use shade_admin::admin::{
     ContractsResponse, AuthorizedUsersResponse, ValidateAuthorityResponse
 };
 use cosmwasm_std::HumanAddr;
-use shade_admin_integration::constants::testnet::*;
-use shade_admin_integration::constants::*;
-use shade_admin_integration::contract_helpers::{TestableContract, Contract};
-use shade_admin_integration::contract_helpers::admin::AdminAuthContract;
+use crate::constants::{*, testnet::*};
+use crate::contract_helpers::{TestableContract, Contract, admin::AdminAuthContract};
+use std::{cell::RefCell, rc::Rc};
 
-fn main() -> Result<()> {
-    let user_a = account_address(HOOMP_KEY).unwrap_or_default();
+#[test]
+fn test1() {
 
-    println!("Account A: {}", user_a.blue());
-
-    deploy(user_a)?;
-    Ok(())
-}
-
-fn deploy_test(user_a: String) -> Result<()> {
-    // let admin_auth = Contract {
-    //     address: HumanAddr::from(ADMIN.to_string()),
-    //     code_hash: ADMIN_HASH.to_string(),
-    // };
-
-    println!("Deploying Admin Auth Contract.");
-    let admin_auth = AdminAuthContract::new(
-        &InitMsg { },
-        Some(HOOMP_KEY),
-        Some("admin_auth"),
-    )?;
-
-    Ok(())
-}
-
-fn deploy(user_a: String) -> Result<()> {
-
+    let ensemble = Rc::new(RefCell::new(ContractEnsemble::new(50)));
+    let overseer = ensemble.borrow_mut().register(Box::new(AdminAuthHarness));
     //let admin_auth = Contract::new(ADMIN.to_string(), ADMIN_HASH.to_string());
 
     println!("Deploying Admin Auth Contract.");
     let admin_auth = AdminAuthContract::new(
         &InitMsg { },
         Some(HOOMP_KEY),
-        Some("admin_auth"),
-    )?;
+        None,
+    ).unwrap();
+    assert!(true == false);
 
     println!("Adding CONTRACT1.");
     let txn = admin_auth.add_contract(
         "CONTRACT1".to_string(),
         Some(HOOMP_KEY),
-    )?.txhash;
-    println!("Completed tx: {}", txn);
+    ).unwrap();
+    //println!("Completed tx: {}", txn);
 
-    let super_list = admin_auth.query_super_admins()?.super_admins;
+    let super_list = admin_auth.query_super_admins().unwrap().super_admins;
     println!("Super-admins: {:?}", super_list);
 
     /*
@@ -106,5 +84,4 @@ fn deploy(user_a: String) -> Result<()> {
 
     */
 
-    Ok(())
 }

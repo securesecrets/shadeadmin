@@ -5,6 +5,10 @@ use cosmwasm_std::{
     StdError, StdResult, Storage,
 };
 
+const CONTRACT: Map<String, Vec<String>> = Map::new("contract");
+const KEYS: Item<Vec<String>> = Item::new("keys");
+const SUPER: Item<Vec<String>> = Item::new("super");
+
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
@@ -134,9 +138,9 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
                 authorized_users: authorized_users
             })
         },
-        QueryMsg::ValidateAuthority { contract_hash, admin_address } => {
+        QueryMsg::ValidateAdminPermission { contract_hash, admin_address } => {
             let error_msg = is_authorized(&deps.storage, contract_hash, admin_address);
-            to_binary(& ValidateAuthorityResponse{
+            to_binary(& ValidateAdminPermissionResponse{
                 error_msg: error_msg
             })
         },
@@ -153,15 +157,11 @@ fn is_super(storage: &impl Storage, address: &String) -> StdResult<()> {
 }
 
 fn is_authorized(storage: &impl Storage, contract_hash: String, admin_address: String) -> Option<String> {
-	let user_list = CONTRACT.load(storage, contract_hash).ok()?;
-	let super_admins = SUPER.load(storage).ok()?;
+	let user_list = CONTRACT.load(storage, contract_hash).unwrap();
+	let super_admins = SUPER.load(storage).unwrap();
 	if super_admins.iter().any(|k| k == &admin_address) || user_list.iter().any(|k| k == &admin_address) {
 		None
     } else {
         Some("Not authorized.".to_string())
     }
 }
-
-const CONTRACT: Map<String, Vec<String>> = Map::new("contract");
-const KEYS: Item<Vec<String>> = Item::new("keys");
-const SUPER: Item<Vec<String>> = Item::new("super");

@@ -4,10 +4,18 @@ use serde::{Deserialize, Serialize};
 use serde_json::Result;
 use shade_admin::admin::{
     InitMsg, HandleMsg, QueryMsg, SuperAdminResponse,
-    ContractsResponse, AuthorizedUsersResponse, ValidateAuthorityResponse
+    ContractsResponse, AuthorizedUsersResponse, ValidateAdminPermissionResponse
 };
 
 use super::{GasLog, TestableContract};
+
+ensemblify!(
+    AdminAuthHarness,
+    admin_contract::init,
+    admin_contract::handle,
+    admin_contract::query,
+    AdminAuth
+);
 
 #[derive(Serialize, Deserialize)]
 pub struct AdminAuthContract {
@@ -45,8 +53,8 @@ impl AdminAuthContract {
         query_contract(self.get_info(), QueryMsg::GetAuthorizedUsers { contract_hash })
     }
 
-    pub fn query_validate_auth(&self, contract_hash: String, admin_address: String) -> Result<ValidateAuthorityResponse> {
-        query_contract(self.get_info(), QueryMsg::ValidateAuthority { contract_hash, admin_address })
+    pub fn query_validate_auth(&self, contract_hash: String, admin_address: String) -> Result<ValidateAdminPermissionResponse> {
+        query_contract(self.get_info(), QueryMsg::ValidateAdminPermission { contract_hash, admin_address })
     }
 
     pub fn add_contract(&self, contract_hash: String, sender_key: Option<&str>) -> Result<GasLog> {

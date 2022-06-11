@@ -1,6 +1,10 @@
 #[cfg(not(target_arch = "wasm32"))]
 pub mod harness;
 
+#[cfg(not(target_arch = "wasm32"))]
+pub use fadroma::ensemble;
+pub use fadroma::platform as scrt;
+/*
 #[cfg(feature = "contracts")]
 #[path = ""]
 mod reexport_contracts {
@@ -13,3 +17,4 @@ mod reexport_contracts {
 
 #[cfg(feature = "contracts")]
 pub use reexport_contracts::*;
+*/

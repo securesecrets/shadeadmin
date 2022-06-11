@@ -39,7 +39,7 @@ pub enum QueryMsg {
 	GetSuperAdmins { },
 	GetContracts { },
 	GetAuthorizedUsers { contract_hash: String },
-	ValidateAuthority {
+	ValidateAdminPermission {
 		contract_hash: String,
 		admin_address: String
 	},
@@ -65,6 +65,6 @@ pub struct AuthorizedUsersResponse {
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
-pub struct ValidateAuthorityResponse {
+pub struct ValidateAdminPermissionResponse {
 	pub error_msg: Option<String>
 }

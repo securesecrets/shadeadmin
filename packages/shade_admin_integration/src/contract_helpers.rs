@@ -1,10 +1,16 @@
 use crate::{
     constants::{BACKEND, GAS, STORE_GAS, USER_A_KEY},
     utils::generate_label,
+    ensemble::{ContractEnsemble, MockEnv},
+    scrt::{ContractInstantiationInfo, ContractLink, HumanAddr, StdResult},
 };
 use secretcli::{
     cli_types::NetContract,
     secretcli::{test_contract_handle, test_inst_init},
+};
+use std::{
+    cell::{RefCell, RefMut},
+    rc::Rc,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
