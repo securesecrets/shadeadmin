@@ -1,9 +1,6 @@
 [workspace]
 members = [
-  "packages/shade_admin_ensemble",
   "packages/shade_admin",
-  "packages/shade_admin_integration",
-
   "contracts/admin",
 ]
 

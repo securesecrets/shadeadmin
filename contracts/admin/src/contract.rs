@@ -1,4 +1,4 @@
-use shade_admin::admin::{InitMsg, HandleMsg, QueryMsg, SuperAdminResponse, ContractsResponse, AuthorizedUsersResponse, ValidateAuthorityResponse};
+use shade_admin::admin::{InitMsg, HandleMsg, QueryMsg, SuperAdminResponse, ContractsResponse, AuthorizedUsersResponse, ValidateAdminPermissionResponse};
 use shade_admin::storage::{Map, Item};
 use cosmwasm_std::{
     to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier,
