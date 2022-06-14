@@ -25,64 +25,49 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     msg: HandleMsg,
 ) -> StdResult<HandleResponse> {
     match msg {
-        HandleMsg::AddContract { contract_hash } => {
+        HandleMsg::AddContract { contract_address } => {
             is_super(&deps.storage, &env.message.sender.to_string())?;
-            let contract = CONTRACT.may_load(&deps.storage, contract_hash.clone())?;
+            let contract = CONTRACT.may_load(&deps.storage, contract_address.clone())?;
             match contract {
                 Some(_contract) => Err(StdError::generic_err("Contract already exists.")),
                 None => {
-                    CONTRACT.save(&mut deps.storage, contract_hash.clone(), &Vec::new())?;
+                    CONTRACT.save(&mut deps.storage, contract_address.clone(), &Vec::new())?;
                     let mut keys = KEYS.load(&deps.storage)?;
-                    keys.push(contract_hash);
+                    keys.push(contract_address);
                     KEYS.save(&mut deps.storage, &keys)?;
                     Ok(HandleResponse::default())
                 },
             }
         },
-        HandleMsg::RemoveContract { contract_hash } => {
+        HandleMsg::RemoveContract { contract_address } => {
             is_super(&deps.storage, &env.message.sender.to_string())?;
-            let contract = CONTRACT.may_load(&deps.storage, contract_hash.clone())?;
-            match contract {
-                Some(_contract) => {
-                    CONTRACT.remove(&mut deps.storage, contract_hash.clone());
-                    let mut keys = KEYS.load(&deps.storage)?;
-                    keys.retain(|k| k != &contract_hash);
-                    KEYS.save(&mut deps.storage, &keys)?;
-                    Ok(HandleResponse::default())
-                },
-                None => Err(StdError::generic_err("Contract does not exist.")),
+            contract_exists(CONTRACT.may_load(&deps.storage, contract_address.clone())?)?;
+            CONTRACT.remove(&mut deps.storage, contract_address.clone());
+            let mut keys = KEYS.load(&deps.storage)?;
+            keys.retain(|k| k != &contract_address);
+            KEYS.save(&mut deps.storage, &keys)?;
+            Ok(HandleResponse::default())
+        },
+        HandleMsg::AddAuthorization { contract_address, admin_address } => {
+            is_super(&deps.storage, &env.message.sender.to_string())?;
+            let mut user_list = contract_exists(CONTRACT.may_load(&deps.storage, contract_address.clone())?)?;
+            if user_list.iter().any(|x| x == &admin_address) {
+                Err(StdError::generic_err("Admin address already exists."))
+            } else {
+                user_list.push(admin_address);
+                CONTRACT.save(&mut deps.storage, contract_address, &user_list)?;
+                Ok(HandleResponse::default())
             }
         },
-        HandleMsg::AddAuthorization { contract_hash, admin_address } => {
+        HandleMsg::RemoveAuthorization { contract_address, admin_address } => {
             is_super(&deps.storage, &env.message.sender.to_string())?;
-            let user_list = CONTRACT.may_load(&deps.storage, contract_hash.clone())?;
-            match user_list {
-                Some(mut user_list) => {
-                    if user_list.iter().any(|x| x == &admin_address) {
-                        Err(StdError::generic_err("Admin address already exists."))
-                    } else {
-                        user_list.push(admin_address);
-                        CONTRACT.save(&mut deps.storage, contract_hash, &user_list)?;
-                        Ok(HandleResponse::default())
-                    }
-                },
-                None => Err(StdError::generic_err("Contract does not exist.")),
-            }
-        },
-        HandleMsg::RemoveAuthorization { contract_hash, admin_address } => {
-            is_super(&deps.storage, &env.message.sender.to_string())?;
-            let user_list = CONTRACT.may_load(&deps.storage, contract_hash.clone())?;
-            match user_list {
-                Some(mut user_list) => {
-                    if user_list.iter().any(|x| x == &admin_address) {
-                        user_list.retain(|k| k != &admin_address);
-                        CONTRACT.save(&mut deps.storage, contract_hash, &user_list)?;
-                        Ok(HandleResponse::default())
-                    } else {
-                        Err(StdError::generic_err("Admin address was never authorized."))
-                    }
-                },
-                None => Err(StdError::generic_err("Contract does not exist.")),
+            let mut user_list = contract_exists(CONTRACT.may_load(&deps.storage, contract_address.clone())?)?;
+            if user_list.iter().any(|x| x == &admin_address) {
+                user_list.retain(|k| k != &admin_address);
+                CONTRACT.save(&mut deps.storage, contract_address, &user_list)?;
+                Ok(HandleResponse::default())
+            } else {
+                Err(StdError::generic_err("Admin address was never authorized."))
             }
         },
         HandleMsg::AddSuper { super_address } => {
@@ -132,14 +117,14 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
                 contracts: contracts_result
             })
         },
-        QueryMsg::GetAuthorizedUsers { contract_hash } => {
-            let authorized_users = CONTRACT.load(&deps.storage, contract_hash)?;
+        QueryMsg::GetAuthorizedUsers { contract_address } => {
+            let authorized_users = CONTRACT.load(&deps.storage, contract_address)?;
             to_binary(& AuthorizedUsersResponse{
                 authorized_users: authorized_users
             })
         },
-        QueryMsg::ValidateAdminPermission { contract_hash, admin_address } => {
-            let error_msg = is_authorized(&deps.storage, contract_hash, admin_address);
+        QueryMsg::ValidateAdminPermission { contract_address, admin_address } => {
+            let error_msg = is_authorized(&deps.storage, contract_address, admin_address);
             to_binary(& ValidateAdminPermissionResponse{
                 error_msg: error_msg
             })
@@ -156,12 +141,20 @@ fn is_super(storage: &impl Storage, address: &String) -> StdResult<()> {
     }
 }
 
-fn is_authorized(storage: &impl Storage, contract_hash: String, admin_address: String) -> Option<String> {
-	let user_list = CONTRACT.load(storage, contract_hash).unwrap();
+fn is_authorized(storage: &impl Storage, contract_address: String, admin_address: String) -> Option<String> {
+	let user_list = CONTRACT.load(storage, contract_address).unwrap();
 	let super_admins = SUPER.load(storage).unwrap();
 	if super_admins.iter().any(|k| k == &admin_address) || user_list.iter().any(|k| k == &admin_address) {
 		None
     } else {
         Some("Not authorized.".to_string())
+    }
+}
+
+fn contract_exists(user_list: Option<Vec<String>>) -> StdResult<Vec<String>> {
+    if let Some(user_list) = user_list {
+        Ok(user_list)
+    } else {
+        Err(StdError::generic_err("Contract does not exist."))
     }
 }

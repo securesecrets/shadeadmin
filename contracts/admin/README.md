@@ -27,32 +27,32 @@ This contract is used to centrally authorize the owners of a contracts. A contra
 #### AddContract
 ##### Request
 Add a contract.
-| Name          | Type   | Description                  | optional |
-|---------------|--------|------------------------------|----------|
-| contract_hash | String | Hash of contract to be added | no       |
+| Name             | Type   | Description                     | optional |
+|------------------|--------|---------------------------------|----------|
+| contract_address | String | Address of contract to be added | no       |
 
 #### RemoveContract
 ##### Request
 Remove a contract.
-| Name          | Type   | Description                    | optional |
-|---------------|--------|--------------------------------|----------|
-| contract_hash | String | Hash of contract to be removed | no       |
+| Name             | Type   | Description                       | optional |
+|------------------|--------|-----------------------------------|----------|
+| contract_address | String | Address of contract to be removed | no       |
 
 #### AddAuthorization
 ##### Request
 Authorize a user with admin perms for the inputted contract.
-| Name          | Type   | Description                                  | optional |
-|---------------|--------|----------------------------------------------|----------|
-| contract_hash | String | Hash of contract                             | no       |
-| admin_address | String | Address of user to be given admin privileges | no       |
+| Name             | Type   | Description                                  | optional |
+|------------------|--------|----------------------------------------------|----------|
+| contract_address | String | Address of contract                          | no       |
+| admin_address    | String | Address of user to be given admin privileges | no       |
 
 #### RemoveAuthorization
 ##### Request
 Deauthorize a user for the inputted contract.
-| Name          | Type   | Description                              | optional |
-|---------------|--------|------------------------------------------|----------|
-| contract_hash | String | Hash of contract                         | no       |
-| admin_address | String | Address of user to lose admin privileges | no       |
+| Name             | Type   | Description                              | optional |
+|------------------|--------|------------------------------------------|----------|
+| contract_address | String | Address of contract                      | no       |
+| admin_address    | String | Address of user to lose admin privileges | no       |
 
 #### AddSuper
 ##### Request
@@ -90,17 +90,17 @@ Gets a list of all of the contracts and the users' that have perms over them.
 ```json
 {
   "ContractsResponse": {
-    "contracts": "Vector containing tuples of the contract hashes and a vector of strings of the authorized users"
+    "contracts": "Vector containing tuples of the contract addresses and a vector of strings of the authorized users"
   }
 }
 ```
 
 #### GetAuthorizedUsers
-Gets a vector of strings of the users' that have perms for the inputted contract hash.
+Gets a vector of strings of the users' that have perms for the inputted contract address.
 ##### Request
-| Name          | Type   | Description      | optional |
-|---------------|--------|------------------|----------|
-| contract_hash | String | Hash of contract | no       |
+| Name             | Type   | Description         | optional |
+|------------------|--------|---------------------|----------|
+| contract_address | String | Address of contract | no       |
 ##### Response
 ```json
 {
@@ -113,10 +113,10 @@ Gets a vector of strings of the users' that have perms for the inputted contract
 #### ValidateAdminPermission
 Determines if inputted admin_address has admin perms over contract.
 ##### Request
-| Name          | Type   | Description                     | optional |
-|---------------|--------|---------------------------------|----------|
-| contract_hash | String | Hash of contract                | no       |
-| admin_address | String | Address of user to be validated | no       |
+| Name             | Type   | Description                     | optional |
+|------------------|--------|---------------------------------|----------|
+| contract_address | String | Address of contract             | no       |
+| admin_address    | String | Address of user to be validated | no       |
 ##### Response
 ```json
 {

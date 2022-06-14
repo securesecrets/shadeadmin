@@ -11,17 +11,17 @@ pub struct InitMsg { }
 #[serde(deny_unknown_fields)]
 pub enum HandleMsg {
 	AddContract{
-		contract_hash: String
+		contract_address: String
 	},
 	RemoveContract{
-		contract_hash: String
+		contract_address: String
 	},
 	AddAuthorization {
-		contract_hash: String,
+		contract_address: String,
 		admin_address: String
 	},
 	RemoveAuthorization { 
-		contract_hash: String,
+		contract_address: String,
 		admin_address: String
 	},
 	AddSuper {
@@ -38,9 +38,9 @@ pub enum HandleMsg {
 pub enum QueryMsg {
 	GetSuperAdmins { },
 	GetContracts { },
-	GetAuthorizedUsers { contract_hash: String },
+	GetAuthorizedUsers { contract_address: String },
 	ValidateAdminPermission {
-		contract_hash: String,
+		contract_address: String,
 		admin_address: String
 	},
 }
