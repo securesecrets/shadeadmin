@@ -16,6 +16,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
 ) -> StdResult<InitResponse> {
     let super_admin: Vec<String> = vec![env.message.sender.to_string()];
     SUPER.save(&mut deps.storage, &super_admin)?;
+    KEYS.save(&mut deps.storage, &Vec::new())?;
     Ok(InitResponse::default())
 }
 
