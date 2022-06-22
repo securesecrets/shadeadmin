@@ -125,7 +125,7 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
             })
         },
         QueryMsg::ValidateAdminPermission { contract_address, admin_address } => {
-            let error_msg = is_authorized(&deps.storage, contract_address, admin_address);
+            let error_msg = is_authorized(&deps.storage, contract_address, admin_address)?;
             to_binary(& ValidateAdminPermissionResponse{
                 error_msg: error_msg
             })
@@ -142,13 +142,21 @@ fn is_super(storage: &impl Storage, address: &String) -> StdResult<()> {
     }
 }
 
-fn is_authorized(storage: &impl Storage, contract_address: String, admin_address: String) -> Option<String> {
-	let user_list = CONTRACT.load(storage, contract_address).unwrap();
-	let super_admins = SUPER.load(storage).unwrap();
-	if super_admins.iter().any(|k| k == &admin_address) || user_list.iter().any(|k| k == &admin_address) {
-		None
+fn is_authorized(storage: &impl Storage, contract_address: String, admin_address: String) -> StdResult<Option<String>> {
+	let super_admins = SUPER.load(storage)?;
+	if super_admins.iter().any(|k| k == &admin_address) {
+		Ok(None)
     } else {
-        Some("Not authorized.".to_string())
+        let user_list = CONTRACT.may_load(storage, contract_address)?;
+        if let Some(user_list) = user_list {
+            if user_list.iter().any(|k| k == &admin_address) {
+                Ok(None)
+            } else {
+                Ok(Some("Not authorized.".to_string()))
+            }
+        } else {
+            Ok(Some("Contract does not exist.".to_string()))
+        }
     }
 }
 
