@@ -155,7 +155,7 @@ fn is_authorized(storage: &impl Storage, contract_address: String, admin_address
                 Ok(Some("Not authorized.".to_string()))
             }
         } else {
-            Ok(Some("Contract does not exist.".to_string()))
+            Ok(Some("Contract does not exist within the Admin Auth.".to_string()))
         }
     }
 }
