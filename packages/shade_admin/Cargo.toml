@@ -21,6 +21,7 @@ cosmwasm-storage = { package = "secret-cosmwasm-storage", version = "0.10.0" }
 cosmwasm-schema = "0.10.1"
 schemars = { version = "0.7" }
 secret-toolkit = { version = "0.2", features = ["permit"] }
+shade-protocol = { version = "0.1.0", git = "https://github.com/securesecrets/shade", features = ["utils"]}
 
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
