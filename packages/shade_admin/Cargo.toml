@@ -1,5 +1,5 @@
 [package]
-name = "shade_admin"
+name = "shade-admin"
 version = "0.1.0"
 authors = ["sbeem <sbeem@pm.me>", "scrtreddev <scrtredev@protonmail.com", "hoomp <flammable.shower939@anonaddy.me>"]
 edition = "2021"
@@ -12,7 +12,7 @@ default = []
 # for quicker tests, cargo test --lib
 # for more explicit tests, cargo test --features=backtraces
 backtraces = ["cosmwasm-std/backtraces"]
-impl = ["storage", "multi-test"]
+impl = ["storage"]
 storage = ["secret-storage-plus"]
 multi-test = ["secret-multi-test"]
 

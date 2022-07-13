@@ -1,18 +1,10 @@
 
 use serde::{Deserialize, Serialize};
-use cosmwasm_std::{StdError, Addr, to_binary as _to_binary, Binary, Deps, StdResult};
+use cosmwasm_std::{StdError, Addr, Deps, StdResult};
 use thiserror::Error;
 //use secret_toolkit::utils::{HandleCallback, Query};
 
 pub type AdminAuthResult<T> = core::result::Result<T, AdminAuthError>;
-
-#[cfg(feature = "impl")]
-pub fn to_binary<T>(data: &T) -> AdminAuthResult<Binary>
-where
-    T: Serialize + ?Sized,
-{
-	_to_binary(data).map_err(AdminAuthError::Std)
-}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -34,9 +26,9 @@ pub enum ExecuteMsg {
 	TransferSuper {
 		new_super: String,
 	},
-	Selfdestruct { },
+	SelfDestruct { },
 	ToggleStatus {
-		active: bool,
+		new_status: bool,
 	}
 }
 

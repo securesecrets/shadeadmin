@@ -19,7 +19,7 @@ crate-type = ["cdylib", "rlib"]
 default = []
 # for quicker tests, cargo test --lib
 # for more explicit tests, cargo test --features=backtraces
-backtraces = ["shade_admin/backtraces"]
+backtraces = ["shade-admin/backtraces"]
 
 [dependencies]
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
@@ -28,4 +28,4 @@ schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive", "alloc"] }
 # secret-toolkit = { version = "0.2", features = ["permit"] }
 snafu = { version = "0.6.3" }
-shade_admin = { path = "../../packages/shade_admin", features = ["impl"] }
+shade-admin = { path = "../../packages/shade_admin", features = ["impl"] }
