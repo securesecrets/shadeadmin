@@ -1,6 +1,6 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use secret_toolkit::utils::{HandleCallback, Query};
+//use secret_toolkit::utils::{HandleCallback, Query};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -33,9 +33,9 @@ pub enum HandleMsg {
 	}
 }
 
-impl HandleCallback for HandleMsg {
-    const BLOCK_SIZE: usize = 256;
-}
+// impl HandleCallback for HandleMsg {
+//     const BLOCK_SIZE: usize = 256;
+// }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
@@ -50,9 +50,9 @@ pub enum QueryMsg {
 	},
 }
 
-impl Query for QueryMsg {
-    const BLOCK_SIZE: usize = 256;
-}
+// impl Query for QueryMsg {
+//     const BLOCK_SIZE: usize = 256;
+// }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
