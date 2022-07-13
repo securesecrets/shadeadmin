@@ -1,6 +1,6 @@
 
 use serde::{Deserialize, Serialize};
-use cosmwasm_std::{StdError, Addr, to_binary as _to_binary, Binary};
+use cosmwasm_std::{StdError, Addr, to_binary as _to_binary, Binary, Deps, StdResult};
 use thiserror::Error;
 //use secret_toolkit::utils::{HandleCallback, Query};
 
@@ -133,4 +133,25 @@ pub enum AdminAuthError {
     UnauthorizedAdmin { contract: Addr },
 	#[error("Permission denied: user is not the authorized super admin.")]
 	UnauthorizedSuper { expected_super_admin: Addr },
+}
+
+/// Delete this when we implement the updated shade protocol package
+#[derive(Serialize, Deserialize)]
+pub struct Contract {
+	pub address: Addr,
+	pub code_hash: String,
+}
+
+pub fn validate_admin(
+    deps: Deps,
+    contract_address: String,
+    admin_address: String,
+    shd_admin: Contract,
+) -> StdResult<bool> {
+	let msg = QueryMsg::ValidateAdminPermission {
+		contract: contract_address,
+		user: admin_address,
+	};
+    let admin_response: ValidateAdminPermissionResponse = deps.querier.query_wasm_smart(shd_admin.code_hash, shd_admin.address, &msg)?;
+    Ok(admin_response.is_admin)
 }
