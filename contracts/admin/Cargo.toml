@@ -28,9 +28,4 @@ schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive", "alloc"] }
 # secret-toolkit = { version = "0.2", features = ["permit"] }
 snafu = { version = "0.6.3" }
-shade_admin = { path = "../../packages/shade_admin", features = ["storage"] }
-
-
-[dev_dependencies]
-secret-multi-test = { git = "https://github.com/securesecrets/secret-plus-utils", version = "0.13.4" }
-mockall = "0.10.2"
+shade_admin = { path = "../../packages/shade_admin", features = ["impl"] }

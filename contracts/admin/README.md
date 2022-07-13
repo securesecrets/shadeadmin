@@ -29,30 +29,30 @@ This contract is used to centrally authorize the owners of a contracts. A contra
 Add a contract.
 | Name             | Type   | Description                     | optional |
 |------------------|--------|---------------------------------|----------|
-| contract_address | String | Address of contract to be added | no       |
+| contract | String | Address of contract to be added | no       |
 
 #### RemoveContract
 ##### Request
 Remove a contract.
 | Name             | Type   | Description                       | optional |
 |------------------|--------|-----------------------------------|----------|
-| contract_address | String | Address of contract to be removed | no       |
+| contract | String | Address of contract to be removed | no       |
 
 #### AddAuthorization
 ##### Request
 Authorize a user with admin perms for the inputted contract.
 | Name             | Type   | Description                                  | optional |
 |------------------|--------|----------------------------------------------|----------|
-| contract_address | String | Address of contract                          | no       |
-| admin_address    | String | Address of user to be given admin privileges | no       |
+| contract | String | Address of contract                          | no       |
+| admin    | String | Address of user to be given admin privileges | no       |
 
 #### RemoveAuthorization
 ##### Request
 Deauthorize a user for the inputted contract.
 | Name             | Type   | Description                              | optional |
 |------------------|--------|------------------------------------------|----------|
-| contract_address | String | Address of contract                      | no       |
-| admin_address    | String | Address of user to lose admin privileges | no       |
+| contract | String | Address of contract                      | no       |
+| admin    | String | Address of user to lose admin privileges | no       |
 
 #### AddSuper
 ##### Request
@@ -100,7 +100,7 @@ Gets a vector of strings of the users' that have perms for the inputted contract
 ##### Request
 | Name             | Type   | Description         | optional |
 |------------------|--------|---------------------|----------|
-| contract_address | String | Address of contract | no       |
+| contract | String | Address of contract | no       |
 ##### Response
 ```json
 {
@@ -111,12 +111,12 @@ Gets a vector of strings of the users' that have perms for the inputted contract
 ```
 
 #### ValidateAdminPermission
-Determines if inputted admin_address has admin perms over contract.
+Determines if inputted admin has admin perms over contract.
 ##### Request
 | Name             | Type   | Description                     | optional |
 |------------------|--------|---------------------------------|----------|
-| contract_address | String | Address of contract             | no       |
-| admin_address    | String | Address of user to be validated | no       |
+| contract | String | Address of contract             | no       |
+| admin    | String | Address of user to be validated | no       |
 ##### Response
 ```json
 {

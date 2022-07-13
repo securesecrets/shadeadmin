@@ -1,169 +1,124 @@
-use shade_admin::admin::{InitMsg, HandleMsg, QueryMsg, SuperAdminResponse, ContractsResponse, AuthorizedUsersResponse, ValidateAdminPermissionResponse};
+use shade_admin::admin::{to_binary, InstantiateMsg, ExecuteMsg, QueryMsg, ConfigResponse, ContractsResponse, ValidateAdminPermissionResponse, AdminAuthError, AdminAuthResult, AdminsResponse, PermissionsResponse};
 use shade_admin::storage::{Map, Item};
 use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier,
-    StdError, StdResult, Storage,
+    Addr, Env, Deps, DepsMut, Response, StdResult, Storage, MessageInfo, entry_point, QueryResponse
 };
 
-const CONTRACT: Map<String, Vec<String>> = Map::new("contract");
-const KEYS: Item<Vec<String>> = Item::new("keys");
-const SUPER: Item<Vec<String>> = Item::new("super");
+/// Maps user to contracts for which they have admin.
+const PERMISSIONS: Map<&Addr, Vec<Addr>> = Map::new("permissions");
+/// List of all contracts that can refer to this admin auth.
+const CONTRACTS: Item<Vec<Addr>> = Item::new("contracts");
+/// List of all admins.
+const ADMINS: Item<Vec<Addr>> = Item::new("admins");
+/// Super admin.
+const SUPER: Item<Addr> = Item::new("super");
+/// Whether or not this contract can be consumed.
+const IS_ACTIVE: Item<bool> = Item::new("is_active");
 
-pub fn init<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
-    env: Env,
-    _msg: InitMsg,
-) -> StdResult<InitResponse> {
-    let super_admin: Vec<String> = vec![env.message.sender.to_string()];
-    SUPER.save(&mut deps.storage, &super_admin)?;
-    KEYS.save(&mut deps.storage, &Vec::new())?;
-    Ok(InitResponse::default())
+#[entry_point]
+pub fn init(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    msg: InstantiateMsg,
+) -> StdResult<Response> {
+    let super_admin = msg.super_admin.unwrap_or_else(|| info.sender.to_string());
+    let super_admin_addr = deps.api.addr_validate(super_admin.as_str())?;
+    SUPER.save(deps.storage, &super_admin_addr)?;
+
+    ADMINS.save(deps.storage, &Vec::new())?;
+    CONTRACTS.save(deps.storage, &Vec::new())?;
+    IS_ACTIVE.save(deps.storage, &true)?;
+
+    let res = Response::new()
+        .add_attribute("action", "initialized")
+        .add_attribute("superadmin", &info.sender);
+    Ok(res)
 }
 
-pub fn handle<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
+#[entry_point]
+pub fn execute(
+    deps: DepsMut,
     env: Env,
-    msg: HandleMsg,
-) -> StdResult<HandleResponse> {
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> AdminAuthResult<Response> {
+    is_super(deps.storage, &info.sender)?;
     match msg {
-        HandleMsg::AddContract { contract_address } => {
-            is_super(&deps.storage, &env.message.sender.to_string())?;
-            let contract = CONTRACT.may_load(&deps.storage, contract_address.clone())?;
-            match contract {
-                Some(_contract) => Err(StdError::generic_err("Contract already exists.")),
-                None => {
-                    CONTRACT.save(&mut deps.storage, contract_address.clone(), &Vec::new())?;
-                    let mut keys = KEYS.load(&deps.storage)?;
-                    keys.push(contract_address);
-                    KEYS.save(&mut deps.storage, &keys)?;
-                    Ok(HandleResponse::default())
-                },
-            }
-        },
-        HandleMsg::RemoveContract { contract_address } => {
-            is_super(&deps.storage, &env.message.sender.to_string())?;
-            contract_exists(CONTRACT.may_load(&deps.storage, contract_address.clone())?)?;
-            CONTRACT.remove(&mut deps.storage, contract_address.clone());
-            let mut keys = KEYS.load(&deps.storage)?;
-            keys.retain(|k| k != &contract_address);
-            KEYS.save(&mut deps.storage, &keys)?;
-            Ok(HandleResponse::default())
-        },
-        HandleMsg::AddAuthorization { contract_address, admin_address } => {
-            is_super(&deps.storage, &env.message.sender.to_string())?;
-            let mut user_list = contract_exists(CONTRACT.may_load(&deps.storage, contract_address.clone())?)?;
-            if user_list.iter().any(|x| x == &admin_address) {
-                Err(StdError::generic_err("Admin address already exists."))
-            } else {
-                user_list.push(admin_address);
-                CONTRACT.save(&mut deps.storage, contract_address, &user_list)?;
-                Ok(HandleResponse::default())
-            }
-        },
-        HandleMsg::RemoveAuthorization { contract_address, admin_address } => {
-            is_super(&deps.storage, &env.message.sender.to_string())?;
-            let mut user_list = contract_exists(CONTRACT.may_load(&deps.storage, contract_address.clone())?)?;
-            if user_list.iter().any(|x| x == &admin_address) {
-                user_list.retain(|k| k != &admin_address);
-                CONTRACT.save(&mut deps.storage, contract_address, &user_list)?;
-                Ok(HandleResponse::default())
-            } else {
-                Err(StdError::generic_err("Admin address was never authorized."))
-            }
-        },
-        HandleMsg::AddSuper { super_address } => {
-            is_super(&deps.storage, &env.message.sender.to_string())?;
-            let mut super_list = SUPER.load(&deps.storage)?;
-            if super_list.iter().any(|x| x == &super_address) {
-                Err(StdError::generic_err("Super-admin address already exists."))
-            } else {
-                super_list.push(super_address);
-                SUPER.save(&mut deps.storage, &super_list)?;
-                Ok(HandleResponse::default())
-            }
-        },
-        HandleMsg::RemoveSuper { super_address } => {
-            is_super(&deps.storage, &env.message.sender.to_string())?;
-            let mut super_list = SUPER.load(&deps.storage)?;
-            if super_list.iter().any(|x| x == &super_address) {
-                super_list.retain(|k| k != &super_address);
-                SUPER.save(&mut deps.storage, &super_list)?;
-                Ok(HandleResponse::default())
-            } else {
-                Err(StdError::generic_err("Super-admin address was never authorized."))
-            }
-        }
+        ExecuteMsg::UpdateRegistry { action } => todo!(),
+        ExecuteMsg::UpdateRegistryBulk { actions } => todo!(),
+        ExecuteMsg::TransferSuper { new_super } => todo!(),
+        ExecuteMsg::Selfdestruct {  } => todo!(),
+        ExecuteMsg::ToggleStatus { active } => todo!(),
     }
 }
 
-pub fn query<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
+fn try_selfdestruct(deps: DepsMut) -> AdminAuthResult<Response> {
+    // Clear
+    Ok(Response::default())
+}
+
+#[entry_point]
+pub fn query(
+    deps: Deps,
+    env: Env,
     msg: QueryMsg,
-) -> StdResult<Binary> {
+) -> AdminAuthResult<QueryResponse> {
     match msg {
-        QueryMsg::GetSuperAdmins { } => {
-            let super_admins = SUPER.load(&deps.storage)?;
-            to_binary(& SuperAdminResponse{
-                super_admins: super_admins
-            })
-        },
-        QueryMsg::GetContracts { } => {
-            let mut contracts_result = vec![];
-            let keys = KEYS.load(&deps.storage)?;
-            for key in keys.iter() {
-                let admin_list = CONTRACT.load(&deps.storage, key.clone())?;
-                contracts_result.push((key.clone(), admin_list));
-            }
-            to_binary(& ContractsResponse{
-                contracts: contracts_result
-            })
-        },
-        QueryMsg::GetAuthorizedUsers { contract_address } => {
-            let authorized_users = CONTRACT.load(&deps.storage, contract_address)?;
-            to_binary(& AuthorizedUsersResponse{
-                authorized_users: authorized_users
-            })
-        },
-        QueryMsg::ValidateAdminPermission { contract_address, admin_address } => {
-            let error_msg = is_authorized(&deps.storage, contract_address, admin_address)?;
-            to_binary(& ValidateAdminPermissionResponse{
-                error_msg: error_msg
+        QueryMsg::GetConfig { } => {
+            to_binary(&ConfigResponse {
+                super_admin: SUPER.load(deps.storage)?,
+                active: IS_ACTIVE.load(deps.storage)?,
+            })},
+        QueryMsg::ValidateAdminPermission { contract, user } => 
+            to_binary(&query_validate_permission(deps, contract, user)?),
+        QueryMsg::GetContracts {  } => 
+            to_binary(&ContractsResponse { 
+                contracts: CONTRACTS.load(deps.storage)?
+            }),
+        QueryMsg::GetAdmins {  } => to_binary(&AdminsResponse { 
+            admins: ADMINS.load(deps.storage)?
+        }),
+        QueryMsg::GetPermissions { user } => {
+            let validated_user = deps.api.addr_validate(user.as_str())?;
+            to_binary(&PermissionsResponse {
+                contracts: PERMISSIONS.load(deps.storage, &validated_user)?
             })
         },
     }
 }
 
-fn is_super(storage: &impl Storage, address: &String) -> StdResult<()> {
-    let super_admins = SUPER.load(storage)?;
-    if super_admins.iter().any(|k| k == address) {
+fn is_super(storage: &dyn Storage, address: &Addr) -> AdminAuthResult<()> {
+    let super_admin = SUPER.load(storage)?;
+    if super_admin == *address {
         Ok(())
     } else {
-        Err(StdError::unauthorized())
+        Err(AdminAuthError::UnauthorizedSuper { expected_super_admin: super_admin })
     }
 }
 
-fn is_authorized(storage: &impl Storage, contract_address: String, admin_address: String) -> StdResult<Option<String>> {
-	let super_admins = SUPER.load(storage)?;
-	if super_admins.iter().any(|k| k == &admin_address) {
-		Ok(None)
+fn query_validate_permission(deps: Deps, contract: String, user: String) -> AdminAuthResult<ValidateAdminPermissionResponse> {
+    let valid_contract = deps.api.addr_validate(contract.as_str())?;
+    let valid_user = deps.api.addr_validate(user.as_str())?;
+	let super_admin = SUPER.load(deps.storage)?;
+
+    let is_admin: bool;
+
+    if valid_user == super_admin {
+        is_admin = true;
     } else {
-        let user_list = CONTRACT.may_load(storage, contract_address)?;
-        if let Some(user_list) = user_list {
-            if user_list.iter().any(|k| k == &admin_address) {
-                Ok(None)
-            } else {
-                Ok(Some("Not authorized.".to_string()))
-            }
-        } else {
-            Ok(Some("Contract does not exist within the Admin Auth.".to_string()))
+        let permissions = PERMISSIONS.may_load(deps.storage, &valid_user)?;
+        match permissions {
+            Some(permissions) => {
+                if permissions.iter().any(|c| valid_user == *c) {
+                    is_admin = true;
+                } else {
+                    return Err(AdminAuthError::UnauthorizedAdmin { contract: valid_contract });
+                }
+            },
+            // If user has been registered, there should be an empty vector there.
+            None => return Err(AdminAuthError::UnregisteredAdmin { user: valid_user }),
         }
     }
-}
-
-fn contract_exists(user_list: Option<Vec<String>>) -> StdResult<Vec<String>> {
-    if let Some(user_list) = user_list {
-        Ok(user_list)
-    } else {
-        Err(StdError::generic_err("Contract does not exist."))
-    }
+    Ok(ValidateAdminPermissionResponse { is_admin })
 }

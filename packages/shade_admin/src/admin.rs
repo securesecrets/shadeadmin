@@ -1,52 +1,86 @@
-use schemars::JsonSchema;
+
 use serde::{Deserialize, Serialize};
+use cosmwasm_std::{StdError, Addr, to_binary as _to_binary, Binary};
+use thiserror::Error;
 //use secret_toolkit::utils::{HandleCallback, Query};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(deny_unknown_fields)]
-#[serde(rename_all = "snake_case")]
-pub struct InitMsg { }
+pub type AdminAuthResult<T> = core::result::Result<T, AdminAuthError>;
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
+#[cfg(feature = "impl")]
+pub fn to_binary<T>(data: &T) -> AdminAuthResult<Binary>
+where
+    T: Serialize + ?Sized,
+{
+	_to_binary(data).map_err(AdminAuthError::Std)
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "snake_case")]
+pub struct InstantiateMsg {
+	pub super_admin: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
-pub enum HandleMsg {
-	AddContract{
-		contract_address: String
+pub enum ExecuteMsg {
+	UpdateRegistry {
+		action: RegistryAction,
 	},
-	RemoveContract{
-		contract_address: String
+	UpdateRegistryBulk {
+		actions: Vec<RegistryAction>,
 	},
-	AddAuthorization {
-		contract_address: String,
-		admin_address: String
+	TransferSuper {
+		new_super: String,
 	},
-	RemoveAuthorization { 
-		contract_address: String,
-		admin_address: String
-	},
-	AddSuper {
-		super_address: String
-	},
-	RemoveSuper {
-		super_address: String
+	Selfdestruct { },
+	ToggleStatus {
+		active: bool,
 	}
 }
 
-// impl HandleCallback for HandleMsg {
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+pub enum RegistryAction {
+	RegisterAdmin {
+		admin: String,
+	},
+	AddContract{
+		contract: String
+	},
+	RemoveContract{
+		contract: String
+	},
+	GrantAccess {
+		contract: String,
+		admin: String
+	},
+	RevokeAccess { 
+		contract: String,
+		admin: String
+	},
+	DeleteAdmin {
+		admin: String
+	},
+}
+
+// impl HandleCallback for ExecuteMsg {
 //     const BLOCK_SIZE: usize = 256;
 // }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum QueryMsg {
-	GetSuperAdmins { },
+	GetConfig { },
 	GetContracts { },
-	GetAuthorizedUsers { contract_address: String },
+	GetAdmins { },
+	GetPermissions { user: String },
 	ValidateAdminPermission {
-		contract_address: String,
-		admin_address: String
+		contract: String,
+		user: String
 	},
 }
 
@@ -54,26 +88,49 @@ pub enum QueryMsg {
 //     const BLOCK_SIZE: usize = 256;
 // }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
-pub struct SuperAdminResponse {
-	pub super_admins: Vec<String>
+pub struct ConfigResponse {
+	pub super_admin: Addr,
+	pub active: bool,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct PermissionsResponse {
+	pub contracts: Vec<Addr>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct ContractsResponse {
-	pub contracts: Vec<(String, Vec<String>)>
+	pub contracts: Vec<Addr>
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
-pub struct AuthorizedUsersResponse {
-	pub authorized_users: Vec<String>
+pub struct AdminsResponse {
+	pub admins: Vec<Addr>
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct ValidateAdminPermissionResponse {
-	pub error_msg: Option<String>
+	pub is_admin: bool
+}
+
+#[derive(Error, Debug, PartialEq)]
+pub enum AdminAuthError {
+    #[error("{0}")]
+    // let thiserror implement From<StdError> for you
+    Std(#[from] StdError),
+    // this is whatever we want
+    #[error("Registry error: user has not been registered as an admin.")]
+    UnregisteredAdmin { user: Addr },
+	#[error("Registry error: contract has not been registered.")]
+	UnregisteredContract { unregistered_contract: Addr },
+    #[error("Permission denied: user is not an admin for this contract.")]
+    UnauthorizedAdmin { contract: Addr },
+	#[error("Permission denied: user is not the authorized super admin.")]
+	UnauthorizedSuper { expected_super_admin: Addr },
 }
