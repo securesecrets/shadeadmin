@@ -43,6 +43,7 @@ jobs:
       matrix:
         dir: ${{fromJson(needs.find-contracts.outputs.dir)}}
     steps:
+      - run: pwd
       - id: set-contract
         run: echo "::set-output name=contract::$(echo ${{matrix.dir}} | rev | cut -d'/' -f 2- | rev)"
       - run: |
