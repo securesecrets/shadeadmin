@@ -68,4 +68,9 @@ clean:
 
 format:
 	cargo fmt
-	
+
+schema: schema-admin
+
+schema-admin:
+	cd contracts/admin \
+	&& cargo schema \
