@@ -1,21 +1,17 @@
 
-use serde::{Deserialize, Serialize};
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{StdError, Addr, Deps, StdResult};
 use thiserror::Error;
 //use secret_toolkit::utils::{HandleCallback, Query};
 
 pub type AdminAuthResult<T> = core::result::Result<T, AdminAuthError>;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-#[serde(deny_unknown_fields)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct InstantiateMsg {
 	pub super_admin: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-#[serde(deny_unknown_fields)]
+#[cw_serde]
 pub enum ExecuteMsg {
 	UpdateRegistry {
 		action: RegistryAction,
@@ -32,9 +28,7 @@ pub enum ExecuteMsg {
 	}
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-#[serde(deny_unknown_fields)]
+#[cw_serde]
 pub enum RegistryAction {
 	RegisterAdmin {
 		admin: String,
@@ -62,14 +56,18 @@ pub enum RegistryAction {
 //     const BLOCK_SIZE: usize = 256;
 // }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-#[serde(deny_unknown_fields)]
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
+	#[returns(ConfigResponse)]
 	GetConfig { },
+	#[returns(ContractsResponse)]
 	GetContracts { },
+	#[returns(AdminsResponse)]
 	GetAdmins { },
+	#[returns(PermissionsResponse)]
 	GetPermissions { user: String },
+	#[returns(ValidateAdminPermissionResponse)]
 	ValidateAdminPermission {
 		contract: String,
 		user: String
@@ -80,33 +78,28 @@ pub enum QueryMsg {
 //     const BLOCK_SIZE: usize = 256;
 // }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct ConfigResponse {
 	pub super_admin: Addr,
 	pub active: bool,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct PermissionsResponse {
 	pub contracts: Vec<Addr>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct ContractsResponse {
 	pub contracts: Vec<Addr>
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct AdminsResponse {
 	pub admins: Vec<Addr>
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct ValidateAdminPermissionResponse {
 	pub is_admin: bool
 }
@@ -128,7 +121,7 @@ pub enum AdminAuthError {
 }
 
 /// Delete this when we implement the updated shade protocol package
-#[derive(Serialize, Deserialize)]
+#[cw_serde]
 pub struct Contract {
 	pub address: Addr,
 	pub code_hash: String,
