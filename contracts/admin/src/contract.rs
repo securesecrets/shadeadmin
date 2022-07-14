@@ -1,9 +1,13 @@
-use shade_admin::admin::{InstantiateMsg, ExecuteMsg, QueryMsg, ConfigResponse, ContractsResponse, ValidateAdminPermissionResponse, AdminAuthResult, AdminAuthError, AdminsResponse, PermissionsResponse, RegistryAction};
-use shade_admin::core::cosmwasm_std;
-use shade_admin::storage::{Map, Item};
 use cosmwasm_std::{
-    to_binary, Addr, Env, Deps, DepsMut, Response, StdResult, Storage, MessageInfo, entry_point, QueryResponse
+    entry_point, to_binary, Addr, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response,
+    StdResult, Storage,
 };
+use shade_admin::admin::{
+    AdminAuthError, AdminAuthResult, AdminsResponse, ConfigResponse, ContractsResponse, ExecuteMsg,
+    InstantiateMsg, PermissionsResponse, QueryMsg, RegistryAction, ValidateAdminPermissionResponse,
+};
+use shade_admin::core::cosmwasm_std;
+use shade_admin::storage::{Item, Map};
 
 /// Maps user to contracts for which they have admin.
 const PERMISSIONS: Map<&Addr, Vec<Addr>> = Map::new("permissions");
@@ -43,7 +47,7 @@ pub fn execute(
     _env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> AdminAuthResult<Response>  {
+) -> AdminAuthResult<Response> {
     // Only the super admin can execute anything on this contract.
     is_super(deps.storage, &info.sender)?;
     // Super admin is assumed to have been verified by this point.
@@ -51,7 +55,7 @@ pub fn execute(
         ExecuteMsg::UpdateRegistry { action } => try_update_registry(deps, action),
         ExecuteMsg::UpdateRegistryBulk { actions } => try_update_registry_bulk(deps, actions),
         ExecuteMsg::TransferSuper { new_super } => try_transfer_super(deps, new_super),
-        ExecuteMsg::SelfDestruct {  } => try_self_destruct(deps),
+        ExecuteMsg::SelfDestruct {} => try_self_destruct(deps),
         ExecuteMsg::ToggleStatus { new_status } => try_toggle_status(deps, new_status),
     }
 }
@@ -60,7 +64,10 @@ fn try_update_registry(deps: DepsMut, action: RegistryAction) -> AdminAuthResult
     Ok(Response::default())
 }
 
-fn try_update_registry_bulk(deps: DepsMut, actions: Vec<RegistryAction>) -> AdminAuthResult<Response> {
+fn try_update_registry_bulk(
+    deps: DepsMut,
+    actions: Vec<RegistryAction>,
+) -> AdminAuthResult<Response> {
     Ok(Response::default())
 }
 
@@ -69,7 +76,6 @@ fn try_transfer_super(deps: DepsMut, new_super: String) -> AdminAuthResult<Respo
 }
 
 fn try_self_destruct(deps: DepsMut) -> AdminAuthResult<Response> {
-
     // Clear permissions
 
     // Clear admins
@@ -80,39 +86,32 @@ fn try_self_destruct(deps: DepsMut) -> AdminAuthResult<Response> {
 }
 
 fn try_toggle_status(deps: DepsMut, new_status: bool) -> AdminAuthResult<Response> {
-    IS_ACTIVE.update(deps.storage, |_| -> StdResult<_> {
-        Ok(new_status)
-    })?;
+    IS_ACTIVE.update(deps.storage, |_| -> StdResult<_> { Ok(new_status) })?;
     Ok(Response::default())
 }
 
 #[entry_point]
-pub fn query(
-    deps: Deps,
-    env: Env,
-    msg: QueryMsg,
-) -> AdminAuthResult<QueryResponse> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> AdminAuthResult<QueryResponse> {
     match msg {
-        QueryMsg::GetConfig { } => {
-            Ok(to_binary(&ConfigResponse {
-                super_admin: SUPER.load(deps.storage)?,
-                active: IS_ACTIVE.load(deps.storage)?,
-            })?)},
-        QueryMsg::ValidateAdminPermission { contract, user } => 
-            Ok(to_binary(&query_validate_permission(deps, contract, user)?)?),
-        QueryMsg::GetContracts {  } => 
-            Ok(to_binary(&ContractsResponse { 
-                contracts: CONTRACTS.load(deps.storage)?
-            })?),
-        QueryMsg::GetAdmins {  } => Ok(to_binary(&AdminsResponse { 
-            admins: ADMINS.load(deps.storage)?
+        QueryMsg::GetConfig {} => Ok(to_binary(&ConfigResponse {
+            super_admin: SUPER.load(deps.storage)?,
+            active: IS_ACTIVE.load(deps.storage)?,
+        })?),
+        QueryMsg::ValidateAdminPermission { contract, user } => Ok(to_binary(
+            &query_validate_permission(deps, contract, user)?,
+        )?),
+        QueryMsg::GetContracts {} => Ok(to_binary(&ContractsResponse {
+            contracts: CONTRACTS.load(deps.storage)?,
+        })?),
+        QueryMsg::GetAdmins {} => Ok(to_binary(&AdminsResponse {
+            admins: ADMINS.load(deps.storage)?,
         })?),
         QueryMsg::GetPermissions { user } => {
             let validated_user = deps.api.addr_validate(user.as_str())?;
             Ok(to_binary(&PermissionsResponse {
-                contracts: PERMISSIONS.load(deps.storage, &validated_user)?
+                contracts: PERMISSIONS.load(deps.storage, &validated_user)?,
             })?)
-        },
+        }
     }
 }
 
@@ -121,14 +120,20 @@ fn is_super(storage: &dyn Storage, address: &Addr) -> AdminAuthResult<()> {
     if super_admin == *address {
         Ok(())
     } else {
-        Err(AdminAuthError::UnauthorizedSuper { expected_super_admin: super_admin })
+        Err(AdminAuthError::UnauthorizedSuper {
+            expected_super_admin: super_admin,
+        })
     }
 }
 
-fn query_validate_permission(deps: Deps, contract: String, user: String) -> AdminAuthResult<ValidateAdminPermissionResponse> {
+fn query_validate_permission(
+    deps: Deps,
+    contract: String,
+    user: String,
+) -> AdminAuthResult<ValidateAdminPermissionResponse> {
     let valid_contract = deps.api.addr_validate(contract.as_str())?;
     let valid_user = deps.api.addr_validate(user.as_str())?;
-	let super_admin = SUPER.load(deps.storage)?;
+    let super_admin = SUPER.load(deps.storage)?;
 
     let is_admin: bool;
 
@@ -141,9 +146,11 @@ fn query_validate_permission(deps: Deps, contract: String, user: String) -> Admi
                 if permissions.iter().any(|c| valid_user == *c) {
                     is_admin = true;
                 } else {
-                    return Err(AdminAuthError::UnauthorizedAdmin { contract: valid_contract });
+                    return Err(AdminAuthError::UnauthorizedAdmin {
+                        contract: valid_contract,
+                    });
                 }
-            },
+            }
             // If user has been registered, there should be an empty vector there.
             None => return Err(AdminAuthError::UnregisteredAdmin { user: valid_user }),
         }

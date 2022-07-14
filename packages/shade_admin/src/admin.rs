@@ -1,6 +1,5 @@
-
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{StdError, Addr, Deps, StdResult};
+use cosmwasm_std::{Addr, Deps, StdError, StdResult};
 use thiserror::Error;
 //use secret_toolkit::utils::{HandleCallback, Query};
 
@@ -8,48 +7,26 @@ pub type AdminAuthResult<T> = core::result::Result<T, AdminAuthError>;
 
 #[cw_serde]
 pub struct InstantiateMsg {
-	pub super_admin: Option<String>,
+    pub super_admin: Option<String>,
 }
 
 #[cw_serde]
 pub enum ExecuteMsg {
-	UpdateRegistry {
-		action: RegistryAction,
-	},
-	UpdateRegistryBulk {
-		actions: Vec<RegistryAction>,
-	},
-	TransferSuper {
-		new_super: String,
-	},
-	SelfDestruct { },
-	ToggleStatus {
-		new_status: bool,
-	}
+    UpdateRegistry { action: RegistryAction },
+    UpdateRegistryBulk { actions: Vec<RegistryAction> },
+    TransferSuper { new_super: String },
+    SelfDestruct {},
+    ToggleStatus { new_status: bool },
 }
 
 #[cw_serde]
 pub enum RegistryAction {
-	RegisterAdmin {
-		admin: String,
-	},
-	AddContract{
-		contract: String
-	},
-	RemoveContract{
-		contract: String
-	},
-	GrantAccess {
-		contract: String,
-		admin: String
-	},
-	RevokeAccess { 
-		contract: String,
-		admin: String
-	},
-	DeleteAdmin {
-		admin: String
-	},
+    RegisterAdmin { admin: String },
+    AddContract { contract: String },
+    RemoveContract { contract: String },
+    GrantAccess { contract: String, admin: String },
+    RevokeAccess { contract: String, admin: String },
+    DeleteAdmin { admin: String },
 }
 
 // impl HandleCallback for ExecuteMsg {
@@ -59,19 +36,16 @@ pub enum RegistryAction {
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
-	#[returns(ConfigResponse)]
-	GetConfig { },
-	#[returns(ContractsResponse)]
-	GetContracts { },
-	#[returns(AdminsResponse)]
-	GetAdmins { },
-	#[returns(PermissionsResponse)]
-	GetPermissions { user: String },
-	#[returns(ValidateAdminPermissionResponse)]
-	ValidateAdminPermission {
-		contract: String,
-		user: String
-	},
+    #[returns(ConfigResponse)]
+    GetConfig {},
+    #[returns(ContractsResponse)]
+    GetContracts {},
+    #[returns(AdminsResponse)]
+    GetAdmins {},
+    #[returns(PermissionsResponse)]
+    GetPermissions { user: String },
+    #[returns(ValidateAdminPermissionResponse)]
+    ValidateAdminPermission { contract: String, user: String },
 }
 
 // impl Query for QueryMsg {
@@ -80,28 +54,28 @@ pub enum QueryMsg {
 
 #[cw_serde]
 pub struct ConfigResponse {
-	pub super_admin: Addr,
-	pub active: bool,
+    pub super_admin: Addr,
+    pub active: bool,
 }
 
 #[cw_serde]
 pub struct PermissionsResponse {
-	pub contracts: Vec<Addr>,
+    pub contracts: Vec<Addr>,
 }
 
 #[cw_serde]
 pub struct ContractsResponse {
-	pub contracts: Vec<Addr>
+    pub contracts: Vec<Addr>,
 }
 
 #[cw_serde]
 pub struct AdminsResponse {
-	pub admins: Vec<Addr>
+    pub admins: Vec<Addr>,
 }
 
 #[cw_serde]
 pub struct ValidateAdminPermissionResponse {
-	pub is_admin: bool
+    pub is_admin: bool,
 }
 
 #[derive(Error, Debug, PartialEq)]
@@ -112,19 +86,19 @@ pub enum AdminAuthError {
     // this is whatever we want
     #[error("Registry error: user has not been registered as an admin.")]
     UnregisteredAdmin { user: Addr },
-	#[error("Registry error: contract has not been registered.")]
-	UnregisteredContract { unregistered_contract: Addr },
+    #[error("Registry error: contract has not been registered.")]
+    UnregisteredContract { unregistered_contract: Addr },
     #[error("Permission denied: user is not an admin for this contract.")]
     UnauthorizedAdmin { contract: Addr },
-	#[error("Permission denied: user is not the authorized super admin.")]
-	UnauthorizedSuper { expected_super_admin: Addr },
+    #[error("Permission denied: user is not the authorized super admin.")]
+    UnauthorizedSuper { expected_super_admin: Addr },
 }
 
 /// Delete this when we implement the updated shade protocol package
 #[cw_serde]
 pub struct Contract {
-	pub address: Addr,
-	pub code_hash: String,
+    pub address: Addr,
+    pub code_hash: String,
 }
 
 pub fn validate_admin(
@@ -133,10 +107,12 @@ pub fn validate_admin(
     admin_address: String,
     shd_admin: Contract,
 ) -> StdResult<bool> {
-	let msg = QueryMsg::ValidateAdminPermission {
-		contract: contract_address,
-		user: admin_address,
-	};
-    let admin_response: ValidateAdminPermissionResponse = deps.querier.query_wasm_smart(shd_admin.code_hash, shd_admin.address, &msg)?;
+    let msg = QueryMsg::ValidateAdminPermission {
+        contract: contract_address,
+        user: admin_address,
+    };
+    let admin_response: ValidateAdminPermissionResponse =
+        deps.querier
+            .query_wasm_smart(shd_admin.code_hash, shd_admin.address, &msg)?;
     Ok(admin_response.is_admin)
 }
