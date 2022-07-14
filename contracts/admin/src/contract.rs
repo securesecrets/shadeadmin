@@ -1,4 +1,5 @@
 use shade_admin::admin::{InstantiateMsg, ExecuteMsg, QueryMsg, ConfigResponse, ContractsResponse, ValidateAdminPermissionResponse, AdminAuthResult, AdminAuthError, AdminsResponse, PermissionsResponse, RegistryAction};
+use shade_admin::core::cosmwasm_std;
 use shade_admin::storage::{Map, Item};
 use cosmwasm_std::{
     to_binary, Addr, Env, Deps, DepsMut, Response, StdResult, Storage, MessageInfo, entry_point, QueryResponse
@@ -39,7 +40,7 @@ pub fn instantiate(
 #[entry_point]
 pub fn execute(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> AdminAuthResult<Response>  {

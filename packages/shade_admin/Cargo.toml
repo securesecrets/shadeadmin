@@ -11,12 +11,13 @@ crate-type = ["cdylib", "rlib"]
 default = []
 # for quicker tests, cargo test --lib
 # for more explicit tests, cargo test --features=backtraces
+core = ["storage"]
 backtraces = ["cosmwasm-std/backtraces"]
-impl = ["storage"]
 storage = ["secret-storage-plus"]
 multi-test = ["secret-multi-test"]
 
 [dependencies]
+# Core
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
 cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
 cosmwasm-schema = { git = "https://github.com/CosmWasm/cosmwasm", commit = "1e05e7e" }

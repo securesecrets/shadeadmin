@@ -1,5 +1,7 @@
-use cosmwasm_std::{Empty, Addr, ContractInfo, StdResult, Coin};
-use serde::{de::DeserializeOwned, Serialize};
+use shade_admin::core::{
+    Empty, Addr, ContractInfo, StdResult, Coin,
+    serde::{de::DeserializeOwned, Serialize}
+};
 use anyhow::Result as AnyResult;
 use shade_admin::{multi_test::{Contract, ContractWrapper, App, Executor, AppResponse}};
 use ::admin::contract::{execute, instantiate, query};

@@ -11,11 +11,6 @@ crate-type = ["cdylib", "rlib"]
 default = []
 
 [dependencies]
-cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
-cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
-schemars = "0.8.1"
-serde = { version = "1.0.103", default-features = false, features = ["derive", "alloc"] }
-thiserror = "1.0"
 anyhow = "1"
-shade-admin = { path = "../shade_admin", features = ["multi-test"] }
+shade-admin = { path = "../shade_admin", features = ["multi-test", "core"] }
 admin = { path = "../../contracts/admin" }

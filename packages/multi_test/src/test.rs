@@ -1,5 +1,5 @@
 use cosmwasm_std::{Addr, StdResult};
-use shade_admin::{multi_test::{App}, admin::{ConfigResponse, QueryMsg, InstantiateMsg, ValidateAdminPermissionResponse, AdminAuthError}};
+use shade_admin::{multi_test::{App}, admin::{ConfigResponse, QueryMsg, InstantiateMsg, ValidateAdminPermissionResponse, AdminAuthError}, core::cosmwasm_std};
 use crate::{AdminAuth, MultiTestable};
 
 #[test]

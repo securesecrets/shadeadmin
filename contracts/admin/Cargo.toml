@@ -22,14 +22,5 @@ default = []
 backtraces = ["shade-admin/backtraces"]
 
 [dependencies]
-cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
-cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
-cosmwasm-schema = { git = "https://github.com/CosmWasm/cosmwasm", commit = "1e05e7e" }
-schemars = "0.8.1"
-serde = { version = "1.0.103", default-features = false, features = ["derive", "alloc"] }
+shade-admin = { path = "../../packages/shade_admin", features = ["core"] }
 # secret-toolkit = { version = "0.2", features = ["permit"] }
-snafu = { version = "0.6.3" }
-shade-admin = { path = "../../packages/shade_admin", features = ["impl"] }
-
-[dev-dependencies]
-
