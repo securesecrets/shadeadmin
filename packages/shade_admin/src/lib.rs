@@ -1,14 +1,12 @@
 pub mod admin;
 #[cfg(feature = "core")]
 pub mod core {
-    pub use cosmwasm_schema;
-    pub use cosmwasm_storage;
+    pub use shade_protocol::cosmwasm_schema as cosmwasm_schema;
     pub use schemars;
     pub use serde;
-    pub use thiserror;
+    pub use shade_protocol::thiserror as thiserror;
+    #[cfg(feature = "scrt")]
     pub use {cosmwasm_std, cosmwasm_std::*};
 }
-#[cfg(feature = "multi-test")]
-pub use secret_multi_test as multi_test;
 #[cfg(feature = "storage")]
-pub use secret_storage_plus as storage;
+pub use shade_protocol::secret_storage_plus as storage;

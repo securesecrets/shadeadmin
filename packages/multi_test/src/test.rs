@@ -1,12 +1,12 @@
-use crate::{AdminAuth, MultiTestable};
-use cosmwasm_std::{Addr, StdResult};
+use crate::admin::{AdminAuth};
+use cosmwasm_std::{Addr, StdResult, ContractInfo};
 use shade_admin::{
     admin::{
-        AdminAuthError, ConfigResponse, InstantiateMsg, QueryMsg, ValidateAdminPermissionResponse,
+        AdminAuthError, ConfigResponse, InstantiateMsg, QueryMsg, ValidateAdminPermissionResponse, ExecuteMsg,
     },
     core::cosmwasm_std,
-    multi_test::App,
 };
+use shade_protocol::{multi_test::App, utils::{InstantianteCallback, ExecuteCallback, Query, MultiTestable}};
 
 #[test]
 fn basic_admin_test() {
@@ -14,23 +14,25 @@ fn basic_admin_test() {
     let super_admin = Addr::unchecked("superadmin");
     let mut router = App::default();
 
-    let msg = InstantiateMsg {
+    let mock_admin = InstantiateMsg {
         super_admin: Some(super_admin.to_string()),
-    };
-    let mock_admin = AdminAuth::init(&mut router, owner, "admin_auth", &[], &msg);
-    let admin_auth = AdminAuth::new(mock_admin);
-    let resp: ConfigResponse = admin_auth.query(&router, &QueryMsg::GetConfig {}).unwrap();
+    }.test_init(AdminAuth::default(), &mut router, owner, "admin_auth", &[]).unwrap();
+
+    let resp: ConfigResponse = QueryMsg::GetConfig {  }.test_query(&mock_admin, &router).unwrap();    
     assert!(resp.active);
     assert_eq!(resp.super_admin, super_admin);
 
-    let resp: StdResult<ValidateAdminPermissionResponse> = admin_auth.query(
-        &router,
-        &QueryMsg::ValidateAdminPermission {
-            contract: "blah".to_string(),
-            user: "owner".to_string(),
-        },
-    );
+    let resp: StdResult<ValidateAdminPermissionResponse> = QueryMsg::ValidateAdminPermission {
+        contract: "blah".to_string(),
+        user: "owner".to_string(),
+    }.test_query(&mock_admin, &router);
+
     assert!(resp.is_err());
     let err = resp.err().unwrap();
     assert!(err.to_string().contains("not been registered as an admin"));
+
+    ExecuteMsg::ToggleStatus { new_status: false }.test_exec(&mock_admin, &mut router, super_admin, &[]).unwrap();
+
+    let resp: ConfigResponse = QueryMsg::GetConfig {  }.test_query(&mock_admin, &router).unwrap();    
+    assert!(!resp.active);
 }

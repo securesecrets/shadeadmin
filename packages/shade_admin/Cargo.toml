@@ -11,20 +11,20 @@ crate-type = ["cdylib", "rlib"]
 default = []
 # for quicker tests, cargo test --lib
 # for more explicit tests, cargo test --features=backtraces
+scrt = ["core"]
+# for contracts ( we don't export cosmwasm-std here because it needs to be included as a contract level dependency
+# in order for the build to work )
 core = ["storage"]
 backtraces = ["cosmwasm-std/backtraces"]
-storage = ["secret-storage-plus"]
-multi-test = ["secret-multi-test"]
+storage = ["shade-protocol/storage_plus"]
+multi-test = ["shade-protocol/multi-test"]
 
 [dependencies]
 # Core
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
-cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
 cosmwasm-schema = { git = "https://github.com/CosmWasm/cosmwasm", commit = "1e05e7e" }
-schemars = "0.8.1"
-serde = { version = "1.0.103", default-features = false, features = ["derive", "alloc"] }
+schemars = "0.8.9"
+serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 thiserror = "1.0"
-# secret-toolkit = { version = "0.2", features = ["permit"] }
-secret-storage-plus = { git = "https://github.com/securesecrets/secret-plus-utils", version = "0.13.4", optional = true }
-secret-multi-test = { git = "https://github.com/securesecrets/secret-plus-utils", version = "0.13.4", optional = true }
+shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = ["interface", "utils", "multi-test"] }
 

@@ -1,13 +1,19 @@
-use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Deps, StdError, StdResult};
-use thiserror::Error;
-//use secret_toolkit::utils::{HandleCallback, Query};
+use shade_protocol::{
+    cosmwasm_schema::{cw_serde, QueryResponses},
+    c_std::{Addr, Deps, StdError, StdResult},
+    thiserror::Error,
+    utils::{InstantianteCallback, ExecuteCallback, Query},
+};
 
 pub type AdminAuthResult<T> = core::result::Result<T, AdminAuthError>;
 
 #[cw_serde]
 pub struct InstantiateMsg {
     pub super_admin: Option<String>,
+}
+
+impl InstantianteCallback for InstantiateMsg {
+    const BLOCK_SIZE: usize = 256;
 }
 
 #[cw_serde]
@@ -29,9 +35,9 @@ pub enum RegistryAction {
     DeleteAdmin { admin: String },
 }
 
-// impl HandleCallback for ExecuteMsg {
-//     const BLOCK_SIZE: usize = 256;
-// }
+impl ExecuteCallback for ExecuteMsg {
+    const BLOCK_SIZE: usize = 256;
+}
 
 #[cw_serde]
 #[derive(QueryResponses)]
@@ -48,9 +54,9 @@ pub enum QueryMsg {
     ValidateAdminPermission { contract: String, user: String },
 }
 
-// impl Query for QueryMsg {
-//     const BLOCK_SIZE: usize = 256;
-// }
+impl Query for QueryMsg {
+    const BLOCK_SIZE: usize = 256;
+}
 
 #[cw_serde]
 pub struct ConfigResponse {
