@@ -2,7 +2,7 @@ use shade_protocol::{
     cosmwasm_schema::{cw_serde, QueryResponses},
     c_std::{Addr, Deps, StdError, StdResult},
     thiserror::Error,
-    utils::{InstantianteCallback, ExecuteCallback, Query},
+    utils::{InstantianteCallback, ExecuteCallback, Query}, Contract,
 };
 
 pub type AdminAuthResult<T> = core::result::Result<T, AdminAuthError>;
@@ -98,13 +98,6 @@ pub enum AdminAuthError {
     UnauthorizedAdmin { contract: Addr },
     #[error("Permission denied: user is not the authorized super admin.")]
     UnauthorizedSuper { expected_super_admin: Addr },
-}
-
-/// Delete this when we implement the updated shade protocol package
-#[cw_serde]
-pub struct Contract {
-    pub address: Addr,
-    pub code_hash: String,
 }
 
 pub fn validate_admin(

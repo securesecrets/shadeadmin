@@ -7,5 +7,5 @@ pub mod admin {
     }
 
     use admin;
-    shade_multi_test::multi_macro::implement_multi!(AdminAuth, admin);
+    multi_derive::implement_multi!(AdminAuth, admin);
 }
