@@ -6,7 +6,6 @@ use shade_admin::admin::{
     AdminAuthError, AdminAuthResult, AdminsResponse, ConfigResponse, ContractsResponse, ExecuteMsg,
     InstantiateMsg, PermissionsResponse, QueryMsg, RegistryAction, ValidateAdminPermissionResponse,
 };
-use shade_admin::core::cosmwasm_std;
 use shade_admin::storage::{Item, Map};
 
 /// Maps user to contracts for which they have admin.
