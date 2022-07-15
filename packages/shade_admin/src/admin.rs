@@ -2,7 +2,7 @@ use shade_protocol::{
     cosmwasm_schema::{cw_serde, QueryResponses},
     c_std::{Addr, Deps, StdError, StdResult},
     thiserror::Error,
-    utils::{InstantianteCallback, ExecuteCallback, Query}, Contract,
+    utils::{InstantiateCallback, ExecuteCallback, Query}, Contract,
 };
 
 pub type AdminAuthResult<T> = core::result::Result<T, AdminAuthError>;
@@ -12,7 +12,7 @@ pub struct InstantiateMsg {
     pub super_admin: Option<String>,
 }
 
-impl InstantianteCallback for InstantiateMsg {
+impl InstantiateCallback for InstantiateMsg {
     const BLOCK_SIZE: usize = 256;
 }
 

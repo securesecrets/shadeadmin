@@ -6,7 +6,7 @@ use shade_admin::{
     },
     core::cosmwasm_std,
 };
-use shade_protocol::{multi_test::App, utils::{InstantianteCallback, ExecuteCallback, Query, MultiTestable}};
+use shade_protocol::{multi_test::App, utils::{InstantiateCallback, ExecuteCallback, Query, MultiTestable}};
 
 #[test]
 fn basic_admin_test() {
