@@ -5,6 +5,7 @@ pub mod core {
     pub use schemars;
     pub use serde;
     pub use shade_protocol::thiserror as thiserror;
+    pub use shade_protocol;
     #[cfg(feature = "scrt")]
     pub use {cosmwasm_std, cosmwasm_std::*};
 }

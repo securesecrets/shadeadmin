@@ -17,7 +17,6 @@ scrt = ["core"]
 core = ["storage"]
 backtraces = ["cosmwasm-std/backtraces"]
 storage = ["shade-protocol/storage_plus"]
-multi-test = ["shade-protocol/multi-test"]
 
 [dependencies]
 # Core
@@ -27,5 +26,5 @@ schemars = "0.8.9"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 thiserror = "1.0"
 getrandom = { version = "0.2", features = ["js"] }
-shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = ["interface", "utils", "multi-test"] }
+shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = ["interface", "utils"] }
 
