@@ -1,8 +1,8 @@
-use crate::admin::{AdminAuth};
-use cosmwasm_std::{Addr, StdResult, ContractInfo};
+use crate::{AdminAuth};
+use cosmwasm_std::{Addr, StdResult};
 use shade_admin::{
     admin::{
-        AdminAuthError, ConfigResponse, InstantiateMsg, QueryMsg, ValidateAdminPermissionResponse, ExecuteMsg,
+        ConfigResponse, InstantiateMsg, QueryMsg, ValidateAdminPermissionResponse, ExecuteMsg,
     },
     core::cosmwasm_std,
 };

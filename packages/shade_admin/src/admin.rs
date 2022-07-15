@@ -1,6 +1,7 @@
+use cosmwasm_std::QuerierWrapper;
 use shade_protocol::{
     cosmwasm_schema::{cw_serde, QueryResponses},
-    c_std::{Addr, Deps, StdError, StdResult},
+    c_std::{Addr, StdError, StdResult},
     thiserror::Error,
     utils::{InstantiateCallback, ExecuteCallback, Query}, Contract,
 };
@@ -27,12 +28,10 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 pub enum RegistryAction {
-    RegisterAdmin { admin: String },
-    AddContract { contract: String },
-    RemoveContract { contract: String },
-    GrantAccess { contract: String, admin: String },
-    RevokeAccess { contract: String, admin: String },
-    DeleteAdmin { admin: String },
+    RegisterAdmin { user: String },
+    GrantAccess { contracts: Vec<String>, user: String },
+    RevokeAccess { contracts: Vec<String>, user: String },
+    DeleteAdmin { user: String },
 }
 
 impl ExecuteCallback for ExecuteMsg {
@@ -44,8 +43,6 @@ impl ExecuteCallback for ExecuteMsg {
 pub enum QueryMsg {
     #[returns(ConfigResponse)]
     GetConfig {},
-    #[returns(ContractsResponse)]
-    GetContracts {},
     #[returns(AdminsResponse)]
     GetAdmins {},
     #[returns(PermissionsResponse)]
@@ -70,11 +67,6 @@ pub struct PermissionsResponse {
 }
 
 #[cw_serde]
-pub struct ContractsResponse {
-    pub contracts: Vec<Addr>,
-}
-
-#[cw_serde]
 pub struct AdminsResponse {
     pub admins: Vec<Addr>,
 }
@@ -90,28 +82,33 @@ pub enum AdminAuthError {
     // let thiserror implement From<StdError> for you
     Std(#[from] StdError),
     // this is whatever we want
-    #[error("Registry error: user has not been registered as an admin.")]
+    #[error("Registry error: user has not been registered as an user.")]
     UnregisteredAdmin { user: Addr },
-    #[error("Registry error: contract has not been registered.")]
-    UnregisteredContract { unregistered_contract: Addr },
-    #[error("Permission denied: user is not an admin for this contract.")]
+    #[error("Permission denied: user is not an user for this contract.")]
     UnauthorizedAdmin { contract: Addr },
-    #[error("Permission denied: user is not the authorized super admin.")]
+    #[error("Permission denied: user is not the authorized super user.")]
     UnauthorizedSuper { expected_super_admin: Addr },
+    #[error("Registry error: there are no permissions for this user.")]
+    NoPermissions { }
 }
 
+/// Returns an error if the user does not have admin privileges for the contract in question.
 pub fn validate_admin(
-    deps: Deps,
-    contract_address: String,
-    admin_address: String,
-    shd_admin: Contract,
-) -> StdResult<bool> {
-    let msg = QueryMsg::ValidateAdminPermission {
-        contract: contract_address,
-        user: admin_address,
-    };
-    let admin_response: ValidateAdminPermissionResponse =
-        deps.querier
-            .query_wasm_smart(shd_admin.code_hash, shd_admin.address, &msg)?;
-    Ok(admin_response.is_admin)
+    querier: &QuerierWrapper,
+    contract: String,
+    user: String,
+    admin_auth: &Contract,
+) -> StdResult<()> {
+    let admin_resp: StdResult<ValidateAdminPermissionResponse> = QueryMsg::ValidateAdminPermission {
+        contract,
+        user,
+    }.query(querier, admin_auth);
+
+    match admin_resp {
+        Ok(resp) => match resp.is_admin {
+            true => Ok(()),
+            false => Err(StdError::generic_err("Unexpected response.")),
+        },
+        Err(err) => Err(err),
+    }
 }
