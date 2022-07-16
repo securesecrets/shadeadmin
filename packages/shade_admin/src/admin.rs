@@ -82,13 +82,13 @@ pub enum AdminAuthError {
     // let thiserror implement From<StdError> for you
     Std(#[from] StdError),
     // this is whatever we want
-    #[error("Registry error: user has not been registered as an user.")]
+    #[error("Registry error: user has not been registered as an admin.")]
     UnregisteredAdmin { user: Addr },
     #[error("Permission denied: user is not an user for this contract.")]
     UnauthorizedAdmin { contract: Addr },
-    #[error("Permission denied: user is not the authorized super user.")]
+    #[error("Permission denied: user is not the authorized super admin.")]
     UnauthorizedSuper { expected_super_admin: Addr },
-    #[error("Registry error: there are no permissions for this user.")]
+    #[error("Registry error: there are no permissions for this admin.")]
     NoPermissions { }
 }
 

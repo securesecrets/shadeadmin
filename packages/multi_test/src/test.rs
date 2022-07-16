@@ -29,6 +29,7 @@ fn basic_admin_test() {
 
     assert!(resp.is_err());
     let err = resp.err().unwrap();
+    //print!("{}", err);
     assert!(err.to_string().contains("not been registered as an admin"));
 
     ExecuteMsg::ToggleStatus { new_status: false }.test_exec(&mock_admin, &mut router, super_admin, &[]).unwrap();
