@@ -48,7 +48,7 @@ pub fn execute(
     is_super(deps.storage, &info.sender)?;
     // Super user is assumed to have been verified by this point.
     match msg {
-        ExecuteMsg::UpdateRegistry { action } => resolve_registry_action(deps.storage, deps.api, action),
+        ExecuteMsg::UpdateRegistry { action } => try_update_registry(deps.storage, deps.api, action),
         ExecuteMsg::UpdateRegistryBulk { actions } => try_update_registry_bulk(deps, actions),
         ExecuteMsg::TransferSuper { new_super } => try_transfer_super(deps, new_super),
         ExecuteMsg::SelfDestruct {} => try_self_destruct(deps),
@@ -56,13 +56,20 @@ pub fn execute(
     }
 }
 
-fn resolve_registry_action(store: &mut dyn Storage, api: &dyn Api, action: RegistryAction) -> AdminAuthResult<Response> {
+fn resolve_registry_action(store: &mut dyn Storage, admins: &mut Vec<Addr>, api: &dyn Api, action: RegistryAction) -> AdminAuthResult<()> {
     match action {
-        RegistryAction::RegisterAdmin { user } => register_admin(store, api, user),
-        RegistryAction::GrantAccess { contracts, user } => grant_access(store, api, contracts, user),
-        RegistryAction::RevokeAccess { contracts, user } => revoke_access(store, api, contracts, user),
-        RegistryAction::DeleteAdmin { user } => delete_admin(store, api,  user),
+        RegistryAction::RegisterAdmin { user } => register_admin(store, admins, api, user),
+        RegistryAction::GrantAccess { contracts, user } => grant_access(store, api, admins, contracts, user),
+        RegistryAction::RevokeAccess { contracts, user } => revoke_access(store, api, admins, contracts, user),
+        RegistryAction::DeleteAdmin { user } => delete_admin(store, admins, api,  user),
     }?;
+    Ok(())
+}
+
+fn try_update_registry(store: &mut dyn Storage, api: &dyn Api, action: RegistryAction) -> AdminAuthResult<Response> {
+    let mut admins = ADMINS.load(store)?;
+    resolve_registry_action(store, &mut admins, api, action)?;
+    ADMINS.save(store, &admins)?;
     Ok(Response::default())
 }
 
@@ -70,39 +77,37 @@ fn try_update_registry_bulk(
     deps: DepsMut,
     actions: Vec<RegistryAction>,
 ) -> AdminAuthResult<Response> {
+    let mut admins = ADMINS.load(deps.storage)?;
     for action in actions {
-        resolve_registry_action(deps.storage, deps.api, action)?;
+        resolve_registry_action(deps.storage, &mut admins, deps.api, action)?;
     };
+    ADMINS.save(deps.storage, &admins)?;
     Ok(Response::default())
 }
 
-fn register_admin(store: &mut dyn Storage, api: &dyn Api, user: String) -> AdminAuthResult<()> {
+fn register_admin(store: &mut dyn Storage, admins: &mut Vec<Addr>, api: &dyn Api, user: String) -> AdminAuthResult<()> {
     let user_addr = api.addr_validate(user.as_str())?;
-    let mut admins = ADMINS.load(store)?;
     if !admins.contains(&user_addr) {
         // Create an empty permissions for them and add their address to the registered array.
         admins.push(user_addr.clone());
         PERMISSIONS.save(store, &user_addr, &vec![])?;
-        ADMINS.save(store, &admins)?;
     };
     Ok(())
 }
 
-fn delete_admin(store: &mut dyn Storage, api: &dyn Api, user: String) -> AdminAuthResult<()> {
+fn delete_admin(store: &mut dyn Storage, admins: &mut Vec<Addr>, api: &dyn Api, user: String) -> AdminAuthResult<()> {
     let user_addr = api.addr_validate(user.as_str())?;
-    let mut admins = ADMINS.load(store)?;
     if admins.contains(&user_addr) {
         // Delete admin from list.
         admins.retain(|x| x.ne(&user_addr));
         // Clear their permissions.
         PERMISSIONS.save(store, &user_addr, &vec![])?;
-        ADMINS.save(store, &admins)?;
     };
     Ok(())
 }
 
-fn verify_registered(store: &dyn Storage, user: &Addr) -> AdminAuthResult<()> {
-    if !ADMINS.load(store)?.contains(user) {
+fn verify_registered(admins: &[Addr], user: &Addr) -> AdminAuthResult<()> {
+    if !admins.contains(user) {
         return Err(AdminAuthError::UnregisteredAdmin { user: user.clone() });
     }
     Ok(())
@@ -117,10 +122,10 @@ fn validate_addresses(api: &dyn Api, contracts: Vec<String>) -> AdminAuthResult<
     Ok(validated_addresses)
 }
 
-fn grant_access(store: &mut dyn Storage, api: &dyn Api, contracts: Vec<String>, user: String) -> AdminAuthResult<()> {
+fn grant_access(store: &mut dyn Storage, api: &dyn Api, admins: &[Addr], contracts: Vec<String>, user: String) -> AdminAuthResult<()> {
     let mut contracts = validate_addresses(api, contracts)?;
     let user = api.addr_validate(user.as_str())?;
-    verify_registered(store, &user)?;
+    verify_registered(admins, &user)?;
     PERMISSIONS.update(store, &user, |old_perms| -> AdminAuthResult<_> {
         match old_perms {
             Some(mut old_perms) => {
@@ -134,10 +139,10 @@ fn grant_access(store: &mut dyn Storage, api: &dyn Api, contracts: Vec<String>, 
     Ok(())
 }
 
-fn revoke_access(store: &mut dyn Storage, api: &dyn Api, contracts: Vec<String>, user: String) -> AdminAuthResult<()> {
+fn revoke_access(store: &mut dyn Storage, api: &dyn Api, admins: &[Addr], contracts: Vec<String>, user: String) -> AdminAuthResult<()> {
     let contracts = validate_addresses(api, contracts)?;
     let user = api.addr_validate(user.as_str())?;
-    verify_registered(store, &user)?;
+    verify_registered(admins, &user)?;
     PERMISSIONS.update(store, &user, |old_perms| -> AdminAuthResult<_> {
         match old_perms {
             Some(mut old_perms) => {
@@ -154,12 +159,14 @@ fn try_transfer_super(deps: DepsMut, new_super: String) -> AdminAuthResult<Respo
     let valid_super = deps.api.addr_validate(new_super.as_str())?;
     // If you're trying to transfer the super permissions to someone who hasn't been registered as an admin,
     // it won't work. This is a safeguard.
-    if !ADMINS.load(deps.storage)?.contains(&valid_super) {
+    let mut admins = ADMINS.load(deps.storage)?;
+    if !admins.contains(&valid_super) {
         return Err(AdminAuthError::UnregisteredAdmin { user: valid_super });
     } else {
         // Update the super and remove them from the admin list.
         SUPER.save(deps.storage, &valid_super)?;
-        delete_admin(deps.storage, deps.api, new_super)?;
+        delete_admin(deps.storage, &mut admins, deps.api, new_super)?;
+        ADMINS.save(deps.storage, &admins)?;
     }
     Ok(Response::default())
 }
