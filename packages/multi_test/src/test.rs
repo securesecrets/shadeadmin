@@ -1,12 +1,10 @@
 use crate::{AdminAuth};
-use cosmwasm_std::{Addr, StdResult};
 use shade_admin::{
     admin::{
         ConfigResponse, InstantiateMsg, QueryMsg, ValidateAdminPermissionResponse, ExecuteMsg,
     },
-    core::cosmwasm_std,
 };
-use shade_protocol::{multi_test::App, utils::{InstantiateCallback, ExecuteCallback, Query, MultiTestable}};
+use shade_protocol::{c_std::{Addr, StdResult}, multi_test::App, utils::{InstantiateCallback, ExecuteCallback, Query, MultiTestable}};
 
 #[test]
 fn basic_admin_test() {

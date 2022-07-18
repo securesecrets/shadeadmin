@@ -13,7 +13,7 @@ default = []
 [dependencies]
 anyhow = "1"
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
-shade-admin = { path = "../shade_admin", features = ["scrt"] }
+shade-admin = { path = "../shade_admin" }
 shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = [ "multi-test" ] }
 admin = { path = "../../contracts/admin" }
 multi-derive = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade" }
