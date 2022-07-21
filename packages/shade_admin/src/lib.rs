@@ -1,4 +1,5 @@
 pub mod admin;
+pub use shade_protocol::utils::*;
 #[cfg(feature = "core")]
 pub mod core {
     pub use shade_protocol::cosmwasm_schema as cosmwasm_schema;
