@@ -18,8 +18,6 @@ crate-type = ["cdylib", "rlib"]
 [features]
 default = []
 # for quicker tests, cargo test --lib
-# for more explicit tests, cargo test --features=backtraces
-backtraces = ["shade-admin/backtraces"]
 
 [dependencies]
 # Needs to be in contract dependency in order for build to work

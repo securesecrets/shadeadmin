@@ -10,12 +10,10 @@ crate-type = ["cdylib", "rlib"]
 [features]
 default = []
 # for quicker tests, cargo test --lib
-# for more explicit tests, cargo test --features=backtraces
 scrt = ["core"]
 # for contracts ( we don't export cosmwasm-std here because it needs to be included as a contract level dependency
 # in order for the build to work )
 core = ["storage"]
-backtraces = ["cosmwasm-std/backtraces"]
 storage = ["shade-protocol/storage_plus"]
 
 [dependencies]
