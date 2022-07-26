@@ -1,4 +1,4 @@
-use crate::{AdminAuth};
+use crate::multi::{AdminAuth};
 use shade_admin::{
     admin::{
         ConfigResponse, InstantiateMsg, QueryMsg, ValidateAdminPermissionResponse, ExecuteMsg,
