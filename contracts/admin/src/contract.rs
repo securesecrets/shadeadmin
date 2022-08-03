@@ -17,7 +17,7 @@ const SUPER: Item<Addr> = Item::new("super");
 /// Whether or not this contract can be consumed.
 const STATUS: Item<AdminAuthStatus> = Item::new("is_active");
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
@@ -37,7 +37,7 @@ pub fn instantiate(
     Ok(res)
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
     _env: Env,
@@ -199,7 +199,7 @@ fn validate_permissions(permissions: &[String]) -> AdminAuthResult<()> {
     Ok(())
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> AdminAuthResult<QueryResponse> {
     match msg {
         QueryMsg::GetConfig {} => Ok(to_binary(&ConfigResponse {
