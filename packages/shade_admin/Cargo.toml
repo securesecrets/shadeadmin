@@ -1,5 +1,5 @@
 [package]
-name = "shade_admin"
+name = "shade-admin"
 version = "0.1.0"
 authors = ["sbeem <sbeem@pm.me>", "scrtreddev <scrtredev@protonmail.com", "hoomp <flammable.shower939@anonaddy.me>"]
 edition = "2021"
@@ -8,24 +8,24 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["storage"]
+default = []
 # for quicker tests, cargo test --lib
-# for more explicit tests, cargo test --features=backtraces
-backtraces = ["cosmwasm-std/backtraces"]
-debug-print = ["cosmwasm-std/debug-print"]
-storage = ["secret-storage-plus"]
+scrt = ["core"]
+# for contracts ( we don't export cosmwasm-std here because it needs to be included as a contract level dependency
+# in order for the build to work )
+core = ["storage"]
+storage = ["shade-protocol/storage_plus"]
 
 [dependencies]
-cosmwasm-std = { package = "secret-cosmwasm-std", version = "0.10.0" }
-cosmwasm-storage = { package = "secret-cosmwasm-storage", version = "0.10.0" }
-cosmwasm-schema = "0.10.1"
-schemars = { version = "0.7" }
-secret-toolkit = { version = "0.2", features = ["permit"] }
-shade-protocol = { version = "0.1.0", git = "https://github.com/securesecrets/shade", branch = "dev", features = ["utils"]}
-
+# Core
+cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
+cosmwasm-schema = { git = "https://github.com/CosmWasm/cosmwasm", commit = "1e05e7e" }
+schemars = "0.8.9"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-thiserror = { version = "1.0" }
-snafu = { version = "0.6.3" }
+thiserror = "1.0"
+shade-protocol = { git = "https://github.com/securesecrets/shade", branch = "cosmwasm_v1_upgrade", features = ["interface", "utils"] }
 
-secret-storage-plus = { git = "https://github.com/securesecrets/secret-storage-plus", tag = "v1.0.0", optional = true }
-fadroma = { git = "https://github.com/hackbg/fadroma", branch = "v100", features = [] }
+# https://docs.rs/getrandom/latest/getrandom/#webassembly-support
+getrandom = { version = "0.2", features = ["js"] }
+
+

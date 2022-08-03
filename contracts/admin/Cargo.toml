@@ -18,21 +18,9 @@ crate-type = ["cdylib", "rlib"]
 [features]
 default = []
 # for quicker tests, cargo test --lib
-# for more explicit tests, cargo test --features=backtraces
-backtraces = ["shade_admin/backtraces"]
 
 [dependencies]
-cosmwasm-std = { package = "secret-cosmwasm-std", version = "0.10.0" }
-cosmwasm-storage = { package = "secret-cosmwasm-storage", version = "0.10.0" }
-secret-toolkit = { version = "0.2", features = ["permit"] }
-
-schemars = "0.7"
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-snafu = { version = "0.6.3" }
-shade_admin = { path = "../../packages/shade_admin" }
-
-
-[dev_dependencies]
-cosmwasm-schema = { git = "https://github.com/enigmampc/SecretNetwork", tag = "v1.0.4-debug-print" }
-
-mockall = "0.10.2"
+# Needs to be in contract dependency in order for build to work
+cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
+shade-admin = { path = "../../packages/shade_admin", features = ["core"] }
+# secret-toolkit = { version = "0.2", features = ["permit"] }

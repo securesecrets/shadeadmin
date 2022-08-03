@@ -1,105 +1,120 @@
-use cosmwasm_std::{Api, Extern, HumanAddr, Querier, StdError, StdResult, Storage};
-use schemars::JsonSchema;
-use secret_toolkit::utils::{HandleCallback, Query};
-use serde::{Deserialize, Serialize};
-use shade_protocol::utils::asset::Contract;
+use shade_protocol::{
+    cosmwasm_schema::{cw_serde, QueryResponses},
+    c_std::{Addr, StdError},
+    thiserror::Error,
+    utils::{InstantiateCallback, ExecuteCallback, Query}
+};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(deny_unknown_fields)]
-#[serde(rename_all = "snake_case")]
-pub struct InitMsg {}
+pub type AdminAuthResult<T> = core::result::Result<T, AdminAuthError>;
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-#[serde(deny_unknown_fields)]
-pub enum HandleMsg {
-    AddContract {
-        contract_address: String,
-    },
-    RemoveContract {
-        contract_address: String,
-    },
-    AddAuthorization {
-        contract_address: String,
-        admin_address: String,
-    },
-    RemoveAuthorization {
-        contract_address: String,
-        admin_address: String,
-    },
-    AddSuper {
-        super_address: String,
-    },
-    RemoveSuper {
-        super_address: String,
-    },
+#[cw_serde]
+pub enum AdminAuthStatus {
+    Active,
+    Maintenance,
+    Shutdown,
 }
 
-impl HandleCallback for HandleMsg {
+impl AdminAuthStatus {
+    // Throws an error if status is under maintenance
+    pub fn not_under_maintenance(&self) -> AdminAuthResult<&Self> {
+        if self.eq(&AdminAuthStatus::Maintenance) {
+            return Err(AdminAuthError::IsUnderMaintenance);
+        }
+        Ok(self)
+    }
+    // Throws an error if status is shutdown
+    pub fn not_shutdown(&self) -> AdminAuthResult<&Self> {
+        if self.eq(&AdminAuthStatus::Shutdown) {
+            return Err(AdminAuthError::IsShutdown);
+        }
+        Ok(self)
+    }
+}
+
+#[cw_serde]
+pub struct InstantiateMsg {
+    pub super_admin: Option<String>,
+}
+
+impl InstantiateCallback for InstantiateMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-#[serde(deny_unknown_fields)]
+#[cw_serde]
+pub enum ExecuteMsg {
+    UpdateRegistry { action: RegistryAction },
+    UpdateRegistryBulk { actions: Vec<RegistryAction> },
+    TransferSuper { new_super: String },
+    SelfDestruct {},
+    ToggleStatus { new_status: AdminAuthStatus },
+}
+
+#[cw_serde]
+pub enum RegistryAction {
+    RegisterAdmin { user: String },
+    GrantAccess { permissions: Vec<String>, user: String },
+    RevokeAccess { permissions: Vec<String>, user: String },
+    DeleteAdmin { user: String },
+}
+
+impl ExecuteCallback for ExecuteMsg {
+    const BLOCK_SIZE: usize = 256;
+}
+
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
-    GetSuperAdmins {},
-    GetContracts {},
-    GetAuthorizedUsers {
-        contract_address: String,
-    },
-    ValidateAdminPermission {
-        contract_address: String,
-        admin_address: String,
-    },
+    #[returns(ConfigResponse)]
+    GetConfig {},
+    #[returns(AdminsResponse)]
+    GetAdmins {},
+    #[returns(PermissionsResponse)]
+    GetPermissions { user: String },
+    #[returns(ValidateAdminPermissionResponse)]
+    ValidateAdminPermission { permission: String, user: String },
 }
 
 impl Query for QueryMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-pub struct SuperAdminResponse {
-    pub super_admins: Vec<String>,
+#[cw_serde]
+pub struct ConfigResponse {
+    pub super_admin: Addr,
+    pub status: AdminAuthStatus,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-pub struct ContractsResponse {
-    pub contracts: Vec<(String, Vec<String>)>,
+#[cw_serde]
+pub struct PermissionsResponse {
+    pub permissions: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-pub struct AuthorizedUsersResponse {
-    pub authorized_users: Vec<String>,
+#[cw_serde]
+pub struct AdminsResponse {
+    pub admins: Vec<Addr>,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct ValidateAdminPermissionResponse {
-    pub error_msg: Option<String>,
+    pub has_permission: bool,
 }
 
-pub fn validate_admin<S: Storage, A: Api, Q: Querier>(
-    deps: &Extern<S, A, Q>,
-    contract_address: HumanAddr,
-    admin_address: HumanAddr,
-    shd_admin: Contract,
-) -> StdResult<bool> {
-    let admin_response: ValidateAdminPermissionResponse = QueryMsg::ValidateAdminPermission {
-        contract_address: contract_address.to_string(),
-        admin_address: admin_address.to_string(),
-    }
-    .query(
-        &deps.querier,
-        shd_admin.code_hash.clone(),
-        shd_admin.address,
-    )?;
-
-    if admin_response.error_msg.is_some() {
-        return Err(StdError::unauthorized());
-    }
-    Ok(true)
+#[derive(Error, Debug, PartialEq)]
+pub enum AdminAuthError {
+    #[error("{0}")]
+    // let thiserror implement From<StdError> for you
+    Std(#[from] StdError),
+    // this is whatever we want
+    #[error("Registry error: {user} has not been registered as an admin.")]
+    UnregisteredAdmin { user: Addr },
+    #[error("Permission denied: {user} does not have this permission - {permission}.")]
+    UnauthorizedAdmin { user: Addr, permission: String },
+    #[error("Permission denied: {expected_super_admin} is not the authorized super admin.")]
+    UnauthorizedSuper { expected_super_admin: Addr },
+    #[error("Registry error: there are no permissions for this {user}.")]
+    NoPermissions { user: Addr },
+    #[error("Contract is currently shutdown. It must be turned on for any changes to be made or any permissions to be validated.")]
+    IsShutdown,
+    #[error("Contract is under maintenance. Only registry updates may be made. Consumers cannot validate permissions at this time.")]
+    IsUnderMaintenance,
 }
