@@ -1,12 +1,35 @@
-use cosmwasm_std::QuerierWrapper;
 use shade_protocol::{
     cosmwasm_schema::{cw_serde, QueryResponses},
-    c_std::{Addr, StdError, StdResult},
+    c_std::{Addr, StdError},
     thiserror::Error,
-    utils::{InstantiateCallback, ExecuteCallback, Query}, Contract,
+    utils::{InstantiateCallback, ExecuteCallback, Query}
 };
 
 pub type AdminAuthResult<T> = core::result::Result<T, AdminAuthError>;
+
+#[cw_serde]
+pub enum AdminAuthStatus {
+    Active,
+    Maintenance,
+    Shutdown,
+}
+
+impl AdminAuthStatus {
+    // Throws an error if status is under maintenance
+    pub fn not_under_maintenance(&self) -> AdminAuthResult<&Self> {
+        if self.eq(&AdminAuthStatus::Maintenance) {
+            return Err(AdminAuthError::IsUnderMaintenance);
+        }
+        Ok(self)
+    }
+    // Throws an error if status is shutdown
+    pub fn not_shutdown(&self) -> AdminAuthResult<&Self> {
+        if self.eq(&AdminAuthStatus::Shutdown) {
+            return Err(AdminAuthError::IsShutdown);
+        }
+        Ok(self)
+    }
+}
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -23,14 +46,14 @@ pub enum ExecuteMsg {
     UpdateRegistryBulk { actions: Vec<RegistryAction> },
     TransferSuper { new_super: String },
     SelfDestruct {},
-    ToggleStatus { new_status: bool },
+    ToggleStatus { new_status: AdminAuthStatus },
 }
 
 #[cw_serde]
 pub enum RegistryAction {
     RegisterAdmin { user: String },
-    GrantAccess { contracts: Vec<String>, user: String },
-    RevokeAccess { contracts: Vec<String>, user: String },
+    GrantAccess { permissions: Vec<String>, user: String },
+    RevokeAccess { permissions: Vec<String>, user: String },
     DeleteAdmin { user: String },
 }
 
@@ -48,7 +71,7 @@ pub enum QueryMsg {
     #[returns(PermissionsResponse)]
     GetPermissions { user: String },
     #[returns(ValidateAdminPermissionResponse)]
-    ValidateAdminPermission { contract: String, user: String },
+    ValidateAdminPermission { permission: String, user: String },
 }
 
 impl Query for QueryMsg {
@@ -58,12 +81,12 @@ impl Query for QueryMsg {
 #[cw_serde]
 pub struct ConfigResponse {
     pub super_admin: Addr,
-    pub active: bool,
+    pub status: AdminAuthStatus,
 }
 
 #[cw_serde]
 pub struct PermissionsResponse {
-    pub contracts: Vec<Addr>,
+    pub permissions: Vec<String>,
 }
 
 #[cw_serde]
@@ -73,7 +96,7 @@ pub struct AdminsResponse {
 
 #[cw_serde]
 pub struct ValidateAdminPermissionResponse {
-    pub is_admin: bool,
+    pub has_permission: bool,
 }
 
 #[derive(Error, Debug, PartialEq)]
@@ -82,33 +105,16 @@ pub enum AdminAuthError {
     // let thiserror implement From<StdError> for you
     Std(#[from] StdError),
     // this is whatever we want
-    #[error("Registry error: user has not been registered as an admin.")]
+    #[error("Registry error: {user} has not been registered as an admin.")]
     UnregisteredAdmin { user: Addr },
-    #[error("Permission denied: user is not an user for this contract.")]
-    UnauthorizedAdmin { contract: Addr },
-    #[error("Permission denied: user is not the authorized super admin.")]
+    #[error("Permission denied: {user} does not have this permission - {permission}.")]
+    UnauthorizedAdmin { user: Addr, permission: String },
+    #[error("Permission denied: {expected_super_admin} is not the authorized super admin.")]
     UnauthorizedSuper { expected_super_admin: Addr },
-    #[error("Registry error: there are no permissions for this admin.")]
-    NoPermissions { }
-}
-
-/// Returns an error if the user does not have admin privileges for the contract in question.
-pub fn validate_admin(
-    querier: &QuerierWrapper,
-    contract: String,
-    user: String,
-    admin_auth: &Contract,
-) -> StdResult<()> {
-    let admin_resp: StdResult<ValidateAdminPermissionResponse> = QueryMsg::ValidateAdminPermission {
-        contract,
-        user,
-    }.query(querier, admin_auth);
-
-    match admin_resp {
-        Ok(resp) => match resp.is_admin {
-            true => Ok(()),
-            false => Err(StdError::generic_err("Unexpected response.")),
-        },
-        Err(err) => Err(err),
-    }
+    #[error("Registry error: there are no permissions for this {user}.")]
+    NoPermissions { user: Addr },
+    #[error("Contract is currently shutdown. It must be turned on for any changes to be made or any permissions to be validated.")]
+    IsShutdown,
+    #[error("Contract is under maintenance. Only registry updates may be made. Consumers cannot validate permissions at this time.")]
+    IsUnderMaintenance,
 }

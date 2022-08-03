@@ -1,4 +1,5 @@
 pub mod admin;
+pub mod querier;
 pub use shade_protocol::utils::*;
 #[cfg(feature = "core")]
 pub mod core {
