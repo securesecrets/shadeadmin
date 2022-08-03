@@ -56,6 +56,13 @@ pub fn execute(
     }
 }
 
+fn is_valid_permission(permission: &str) -> AdminAuthResult<()> {
+    if permission.len() <= 10 { return Err(AdminAuthError::InvalidPermissionFormat { permission: permission.to_string() }); }
+    let valid_chars = permission.bytes().all(|byte| (b'A'..=b'Z').contains(&byte) || (b'0'..=b'9').contains(&byte) || b'_'.eq(&byte));
+    if !valid_chars { return Err(AdminAuthError::InvalidPermissionFormat { permission: permission.to_string() }); }
+    Ok(())
+}
+
 fn resolve_registry_action(store: &mut dyn Storage, admins: &mut Vec<Addr>, api: &dyn Api, action: RegistryAction) -> AdminAuthResult<()> {
     match action {
         RegistryAction::RegisterAdmin { user } => register_admin(store, admins, api, user),
@@ -119,6 +126,7 @@ fn verify_registered(admins: &[Addr], user: &Addr) -> AdminAuthResult<()> {
 
 fn grant_access(store: &mut dyn Storage, api: &dyn Api, admins: &[Addr], mut permissions: Vec<String>, user: String) -> AdminAuthResult<()> {
     let user = api.addr_validate(user.as_str())?;
+    validate_permissions(permissions.as_slice())?;
     verify_registered(admins, &user)?;
     PERMISSIONS.update(store, &user, |old_perms| -> AdminAuthResult<_> {
         match old_perms {
@@ -135,6 +143,7 @@ fn grant_access(store: &mut dyn Storage, api: &dyn Api, admins: &[Addr], mut per
 
 fn revoke_access(store: &mut dyn Storage, api: &dyn Api, admins: &[Addr], permissions: Vec<String>, user: String) -> AdminAuthResult<()> {
     let user = api.addr_validate(user.as_str())?;
+    validate_permissions(permissions.as_slice())?;
     verify_registered(admins, &user)?;
     PERMISSIONS.update(store, &user, |old_perms| -> AdminAuthResult<_> {
         match old_perms {
@@ -183,6 +192,13 @@ fn try_toggle_status(deps: DepsMut, new_status: AdminAuthStatus) -> AdminAuthRes
     Ok(Response::default())
 }
 
+fn validate_permissions(permissions: &[String]) -> AdminAuthResult<()> {
+    for permission in permissions {
+        is_valid_permission(permission.as_str())?;
+    }
+    Ok(())
+}
+
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> AdminAuthResult<QueryResponse> {
     match msg {
@@ -227,7 +243,7 @@ fn query_validate_permission(
     user: String,
 ) -> AdminAuthResult<ValidateAdminPermissionResponse> {
     STATUS.load(deps.storage)?.not_shutdown()?.not_under_maintenance()?;
-
+    is_valid_permission(permission.as_str())?;
     let valid_user = deps.api.addr_validate(user.as_str())?;
     let super_admin = SUPER.load(deps.storage)?;
 
@@ -254,4 +270,23 @@ fn query_validate_permission(
         }
     }
     Ok(ValidateAdminPermissionResponse { has_permission })
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use rstest::*;
+
+    #[rstest]
+    #[case("test", false)]
+    #[case("VAULT_", false)]
+    #[case("VAULT_TARGET", true)]
+    #[case("VAULT_TARG3T_2", true)]
+    #[case("", false)]
+    #[case("*@#$*!*#!#!#****", false)]
+    #[case("VAULT_TARGET_addr", false)]
+    fn test_is_valid_permission(#[case] permission: String, #[case] is_valid: bool) {
+        let resp = is_valid_permission(permission.as_str());
+        if is_valid { assert!(resp.is_ok()); } else { assert!(resp.is_err()); }
+    }
 }

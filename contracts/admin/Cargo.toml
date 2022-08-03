@@ -24,3 +24,6 @@ default = []
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", branch = "secret" }
 shade-admin = { path = "../../packages/shade_admin", features = ["core"] }
 # secret-toolkit = { version = "0.2", features = ["permit"] }
+
+[dev-dependencies]
+rstest = "0.15"

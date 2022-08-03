@@ -117,4 +117,6 @@ pub enum AdminAuthError {
     IsShutdown,
     #[error("Contract is under maintenance. Only registry updates may be made. Consumers cannot validate permissions at this time.")]
     IsUnderMaintenance,
+    #[error("{permission} must be > 10 characters and only contains 0-9, A-Z, and underscores.")]
+    InvalidPermissionFormat { permission: String },
 }
