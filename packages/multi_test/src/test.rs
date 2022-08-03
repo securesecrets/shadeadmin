@@ -56,7 +56,7 @@ fn basic_admin_test() {
 
     ExecuteMsg::ToggleStatus { new_status: AdminAuthStatus::Active }.test_exec(&mock_admin, &mut router, super_admin.clone(), &[]).unwrap();
 
-    let resp: StdResult<ValidateAdminPermissionResponse> = QueryMsg::ValidateAdminPermission { permission: perm_1.clone(), user: owner.to_string() }.test_query(&mock_admin, &router);
-    assert!(resp.is_ok_and(|r| r.has_permission));
+    let resp: ValidateAdminPermissionResponse = QueryMsg::ValidateAdminPermission { permission: perm_1.clone(), user: owner.to_string() }.test_query(&mock_admin, &router).unwrap();
+    assert!(resp.has_permission));
 
 }

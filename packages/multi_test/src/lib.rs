@@ -1,4 +1,3 @@
-#![feature(is_some_with)]
 #[cfg(not(target_arch = "wasm32"))]
 #[cfg(test)]
 mod test;
