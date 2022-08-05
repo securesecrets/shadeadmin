@@ -4,11 +4,11 @@ use shade_protocol::{utils::Query, Contract};
 use crate::admin::{QueryMsg, ValidateAdminPermissionResponse};
 
 /// Returns an error if the user does not have the passed permission.
-pub fn validate_permission<T: Into<String> + Clone>(
+pub fn validate_permission(
     querier: &QuerierWrapper,
-    permission: &T,
+    permission: &(impl Into<String> + Clone),
     user: &Addr,
-    admin_auth: &Contract,
+    admin_auth: &(impl Into<Contract> + Clone),
 ) -> StdResult<()> {
     let admin_resp: StdResult<ValidateAdminPermissionResponse> =
         QueryMsg::ValidateAdminPermission {
