@@ -1,8 +1,8 @@
 use shade_protocol::{
-    cosmwasm_schema::{cw_serde, QueryResponses},
     c_std::{Addr, StdError},
+    cosmwasm_schema::{cw_serde, QueryResponses},
     thiserror::Error,
-    utils::{InstantiateCallback, ExecuteCallback, Query}
+    utils::{ExecuteCallback, InstantiateCallback, Query},
 };
 
 pub type AdminAuthResult<T> = core::result::Result<T, AdminAuthError>;
@@ -51,10 +51,20 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 pub enum RegistryAction {
-    RegisterAdmin { user: String },
-    GrantAccess { permissions: Vec<String>, user: String },
-    RevokeAccess { permissions: Vec<String>, user: String },
-    DeleteAdmin { user: String },
+    RegisterAdmin {
+        user: String,
+    },
+    GrantAccess {
+        permissions: Vec<String>,
+        user: String,
+    },
+    RevokeAccess {
+        permissions: Vec<String>,
+        user: String,
+    },
+    DeleteAdmin {
+        user: String,
+    },
 }
 
 impl ExecuteCallback for ExecuteMsg {

@@ -4,11 +4,11 @@ pub mod querier;
 pub use shade_protocol::utils::*;
 #[cfg(feature = "core")]
 pub mod core {
-    pub use shade_protocol::cosmwasm_schema as cosmwasm_schema;
     pub use schemars;
     pub use serde;
-    pub use shade_protocol::thiserror as thiserror;
     pub use shade_protocol;
+    pub use shade_protocol::cosmwasm_schema;
+    pub use shade_protocol::thiserror;
     #[cfg(feature = "scrt")]
     pub use {cosmwasm_std, cosmwasm_std::*};
 }

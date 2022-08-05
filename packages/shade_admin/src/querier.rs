@@ -1,7 +1,7 @@
-use cosmwasm_std::{QuerierWrapper, StdResult, StdError};
-use shade_protocol::{Contract, utils::Query};
+use cosmwasm_std::{QuerierWrapper, StdError, StdResult};
+use shade_protocol::{utils::Query, Contract};
 
-use crate::admin::{ValidateAdminPermissionResponse, QueryMsg};
+use crate::admin::{QueryMsg, ValidateAdminPermissionResponse};
 
 /// Returns an error if the user does not have the passed permission.
 pub fn validate_permission(
@@ -10,10 +10,12 @@ pub fn validate_permission(
     user: String,
     admin_auth: &Contract,
 ) -> StdResult<()> {
-    let admin_resp: StdResult<ValidateAdminPermissionResponse> = QueryMsg::ValidateAdminPermission {
-        permission: permission.to_string(),
-        user,
-    }.query(querier, admin_auth);
+    let admin_resp: StdResult<ValidateAdminPermissionResponse> =
+        QueryMsg::ValidateAdminPermission {
+            permission: permission.to_string(),
+            user,
+        }
+        .query(querier, admin_auth);
 
     match admin_resp {
         Ok(resp) => match resp.has_permission {

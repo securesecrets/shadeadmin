@@ -1,10 +1,10 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Addr, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response,
-    StdResult, Storage, Api,
+    entry_point, to_binary, Addr, Api, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response,
+    StdResult, Storage,
 };
 use shade_admin::admin::{
-    AdminAuthError, AdminAuthResult, AdminsResponse, ConfigResponse, ExecuteMsg,
-    InstantiateMsg, PermissionsResponse, QueryMsg, RegistryAction, ValidateAdminPermissionResponse, AdminAuthStatus,
+    AdminAuthError, AdminAuthResult, AdminAuthStatus, AdminsResponse, ConfigResponse, ExecuteMsg,
+    InstantiateMsg, PermissionsResponse, QueryMsg, RegistryAction, ValidateAdminPermissionResponse,
 };
 use shade_admin::storage::{Item, Map};
 
@@ -48,7 +48,9 @@ pub fn execute(
     is_super(deps.storage, &info.sender)?;
     // Super user is assumed to have been verified by this point.
     match msg {
-        ExecuteMsg::UpdateRegistry { action } => try_update_registry(deps.storage, deps.api, action),
+        ExecuteMsg::UpdateRegistry { action } => {
+            try_update_registry(deps.storage, deps.api, action)
+        }
         ExecuteMsg::UpdateRegistryBulk { actions } => try_update_registry_bulk(deps, actions),
         ExecuteMsg::TransferSuper { new_super } => try_transfer_super(deps, new_super),
         ExecuteMsg::SelfDestruct {} => try_self_destruct(deps),
@@ -57,24 +59,47 @@ pub fn execute(
 }
 
 fn is_valid_permission(permission: &str) -> AdminAuthResult<()> {
-    if permission.len() <= 10 { return Err(AdminAuthError::InvalidPermissionFormat { permission: permission.to_string() }); }
-    let valid_chars = permission.bytes().all(|byte| (b'A'..=b'Z').contains(&byte) || (b'0'..=b'9').contains(&byte) || b'_'.eq(&byte));
-    if !valid_chars { return Err(AdminAuthError::InvalidPermissionFormat { permission: permission.to_string() }); }
+    if permission.len() <= 10 {
+        return Err(AdminAuthError::InvalidPermissionFormat {
+            permission: permission.to_string(),
+        });
+    }
+    let valid_chars = permission.bytes().all(|byte| {
+        (b'A'..=b'Z').contains(&byte) || (b'0'..=b'9').contains(&byte) || b'_'.eq(&byte)
+    });
+    if !valid_chars {
+        return Err(AdminAuthError::InvalidPermissionFormat {
+            permission: permission.to_string(),
+        });
+    }
     Ok(())
 }
 
-fn resolve_registry_action(store: &mut dyn Storage, admins: &mut Vec<Addr>, api: &dyn Api, action: RegistryAction) -> AdminAuthResult<()> {
+fn resolve_registry_action(
+    store: &mut dyn Storage,
+    admins: &mut Vec<Addr>,
+    api: &dyn Api,
+    action: RegistryAction,
+) -> AdminAuthResult<()> {
     match action {
         RegistryAction::RegisterAdmin { user } => register_admin(store, admins, api, user),
-        RegistryAction::GrantAccess { permissions, user } => grant_access(store, api, admins, permissions, user),
-        RegistryAction::RevokeAccess { permissions, user } => revoke_access(store, api, admins, permissions, user),
-        RegistryAction::DeleteAdmin { user } => delete_admin(store, admins, api,  user),
+        RegistryAction::GrantAccess { permissions, user } => {
+            grant_access(store, api, admins, permissions, user)
+        }
+        RegistryAction::RevokeAccess { permissions, user } => {
+            revoke_access(store, api, admins, permissions, user)
+        }
+        RegistryAction::DeleteAdmin { user } => delete_admin(store, admins, api, user),
     }?;
     Ok(())
 }
 
 /// Performs one registry update. Cannot be run during a shutdown.
-fn try_update_registry(store: &mut dyn Storage, api: &dyn Api, action: RegistryAction) -> AdminAuthResult<Response> {
+fn try_update_registry(
+    store: &mut dyn Storage,
+    api: &dyn Api,
+    action: RegistryAction,
+) -> AdminAuthResult<Response> {
     STATUS.load(store)?.not_shutdown()?;
     let mut admins = ADMINS.load(store)?;
     resolve_registry_action(store, &mut admins, api, action)?;
@@ -91,12 +116,17 @@ fn try_update_registry_bulk(
     let mut admins = ADMINS.load(deps.storage)?;
     for action in actions {
         resolve_registry_action(deps.storage, &mut admins, deps.api, action)?;
-    };
+    }
     ADMINS.save(deps.storage, &admins)?;
     Ok(Response::default())
 }
 
-fn register_admin(store: &mut dyn Storage, admins: &mut Vec<Addr>, api: &dyn Api, user: String) -> AdminAuthResult<()> {
+fn register_admin(
+    store: &mut dyn Storage,
+    admins: &mut Vec<Addr>,
+    api: &dyn Api,
+    user: String,
+) -> AdminAuthResult<()> {
     let user_addr = api.addr_validate(user.as_str())?;
     if !admins.contains(&user_addr) {
         // Create an empty permissions for them and add their address to the registered array.
@@ -106,7 +136,12 @@ fn register_admin(store: &mut dyn Storage, admins: &mut Vec<Addr>, api: &dyn Api
     Ok(())
 }
 
-fn delete_admin(store: &mut dyn Storage, admins: &mut Vec<Addr>, api: &dyn Api, user: String) -> AdminAuthResult<()> {
+fn delete_admin(
+    store: &mut dyn Storage,
+    admins: &mut Vec<Addr>,
+    api: &dyn Api,
+    user: String,
+) -> AdminAuthResult<()> {
     let user_addr = api.addr_validate(user.as_str())?;
     if admins.contains(&user_addr) {
         // Delete admin from list.
@@ -124,7 +159,13 @@ fn verify_registered(admins: &[Addr], user: &Addr) -> AdminAuthResult<()> {
     Ok(())
 }
 
-fn grant_access(store: &mut dyn Storage, api: &dyn Api, admins: &[Addr], mut permissions: Vec<String>, user: String) -> AdminAuthResult<()> {
+fn grant_access(
+    store: &mut dyn Storage,
+    api: &dyn Api,
+    admins: &[Addr],
+    mut permissions: Vec<String>,
+    user: String,
+) -> AdminAuthResult<()> {
     let user = api.addr_validate(user.as_str())?;
     validate_permissions(permissions.as_slice())?;
     verify_registered(admins, &user)?;
@@ -134,14 +175,20 @@ fn grant_access(store: &mut dyn Storage, api: &dyn Api, admins: &[Addr], mut per
                 permissions.retain(|c| !old_perms.contains(c));
                 old_perms.append(&mut permissions);
                 Ok(old_perms)
-            },
+            }
             None => Err(AdminAuthError::NoPermissions { user: user.clone() }),
         }
     })?;
     Ok(())
 }
 
-fn revoke_access(store: &mut dyn Storage, api: &dyn Api, admins: &[Addr], permissions: Vec<String>, user: String) -> AdminAuthResult<()> {
+fn revoke_access(
+    store: &mut dyn Storage,
+    api: &dyn Api,
+    admins: &[Addr],
+    permissions: Vec<String>,
+    user: String,
+) -> AdminAuthResult<()> {
     let user = api.addr_validate(user.as_str())?;
     validate_permissions(permissions.as_slice())?;
     verify_registered(admins, &user)?;
@@ -150,7 +197,7 @@ fn revoke_access(store: &mut dyn Storage, api: &dyn Api, admins: &[Addr], permis
             Some(mut old_perms) => {
                 old_perms.retain(|c| !permissions.contains(c));
                 Ok(old_perms)
-            },
+            }
             None => Err(AdminAuthError::NoPermissions { user: user.clone() }),
         }
     })?;
@@ -177,9 +224,9 @@ fn try_self_destruct(deps: DepsMut) -> AdminAuthResult<Response> {
     STATUS.load(deps.storage)?.not_shutdown()?;
     // Clear permissions
     let admins = ADMINS.load(deps.storage)?;
-    admins.iter().for_each(|admin| {
-        PERMISSIONS.remove(deps.storage, admin)
-    });
+    admins
+        .iter()
+        .for_each(|admin| PERMISSIONS.remove(deps.storage, admin));
     // Clear admins
     ADMINS.save(deps.storage, &vec![])?;
     // Disable contract
@@ -210,13 +257,19 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> AdminAuthResult<QueryRespo
             &query_validate_permission(deps, permission, user)?,
         )?),
         QueryMsg::GetAdmins {} => {
-            STATUS.load(deps.storage)?.not_shutdown()?.not_under_maintenance()?;
-                Ok(to_binary(&AdminsResponse {
+            STATUS
+                .load(deps.storage)?
+                .not_shutdown()?
+                .not_under_maintenance()?;
+            Ok(to_binary(&AdminsResponse {
                 admins: ADMINS.load(deps.storage)?,
             })?)
-    },
+        }
         QueryMsg::GetPermissions { user } => {
-            STATUS.load(deps.storage)?.not_shutdown()?.not_under_maintenance()?;
+            STATUS
+                .load(deps.storage)?
+                .not_shutdown()?
+                .not_under_maintenance()?;
             let validated_user = deps.api.addr_validate(user.as_str())?;
             Ok(to_binary(&PermissionsResponse {
                 permissions: PERMISSIONS.load(deps.storage, &validated_user)?,
@@ -242,7 +295,10 @@ fn query_validate_permission(
     permission: String,
     user: String,
 ) -> AdminAuthResult<ValidateAdminPermissionResponse> {
-    STATUS.load(deps.storage)?.not_shutdown()?.not_under_maintenance()?;
+    STATUS
+        .load(deps.storage)?
+        .not_shutdown()?
+        .not_under_maintenance()?;
     is_valid_permission(permission.as_str())?;
     let valid_user = deps.api.addr_validate(user.as_str())?;
     let super_admin = SUPER.load(deps.storage)?;
@@ -287,6 +343,10 @@ mod test {
     #[case("VAULT_TARGET_addr", false)]
     fn test_is_valid_permission(#[case] permission: String, #[case] is_valid: bool) {
         let resp = is_valid_permission(permission.as_str());
-        if is_valid { assert!(resp.is_ok()); } else { assert!(resp.is_err()); }
+        if is_valid {
+            assert!(resp.is_ok());
+        } else {
+            assert!(resp.is_err());
+        }
     }
 }
