@@ -1,4 +1,4 @@
-use cosmwasm_std::{QuerierWrapper, StdError, StdResult};
+use cosmwasm_std::{QuerierWrapper, StdError, StdResult, Addr};
 use shade_protocol::{utils::Query, Contract};
 
 use crate::admin::{QueryMsg, ValidateAdminPermissionResponse};
@@ -7,13 +7,13 @@ use crate::admin::{QueryMsg, ValidateAdminPermissionResponse};
 pub fn validate_permission(
     querier: &QuerierWrapper,
     permission: &str,
-    user: String,
+    user: &Addr,
     admin_auth: &Contract,
 ) -> StdResult<()> {
     let admin_resp: StdResult<ValidateAdminPermissionResponse> =
         QueryMsg::ValidateAdminPermission {
             permission: permission.to_string(),
-            user,
+            user: user.clone().to_string(),
         }
         .query(querier, admin_auth);
 
