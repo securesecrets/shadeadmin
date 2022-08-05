@@ -6,14 +6,14 @@ use crate::admin::{QueryMsg, ValidateAdminPermissionResponse};
 /// Returns an error if the user does not have the passed permission.
 pub fn validate_permission(
     querier: &QuerierWrapper,
-    permission: &(impl Into<String> + Clone),
+    permission: &str,
     user: &Addr,
     admin_auth: &(impl Into<Contract> + Clone),
 ) -> StdResult<()> {
     let admin_resp: StdResult<ValidateAdminPermissionResponse> =
         QueryMsg::ValidateAdminPermission {
-            permission: permission.clone().into(),
-            user: user.clone().to_string(),
+            permission: permission.to_string(),
+            user: user.to_string(),
         }
         .query(querier, admin_auth);
 
