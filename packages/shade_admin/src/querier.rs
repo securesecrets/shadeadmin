@@ -7,13 +7,13 @@ use crate::admin::{QueryMsg, ValidateAdminPermissionResponse};
 pub fn validate_permission(
     querier: &QuerierWrapper,
     permission: &str,
-    user: &Addr,
+    user: &(impl Into<String> + Clone),
     admin_auth: &(impl Into<Contract> + Clone),
 ) -> StdResult<()> {
     let admin_resp: StdResult<ValidateAdminPermissionResponse> =
         QueryMsg::ValidateAdminPermission {
             permission: permission.to_string(),
-            user: user.to_string(),
+            user: user.clone().into(),
         }
         .query(querier, admin_auth);
 
