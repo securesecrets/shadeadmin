@@ -6,6 +6,7 @@ use shade_admin::admin::{
     AdminAuthError, AdminAuthResult, AdminAuthStatus, AdminsResponse, ConfigResponse, ExecuteMsg,
     InstantiateMsg, PermissionsResponse, QueryMsg, RegistryAction, ValidateAdminPermissionResponse,
 };
+use shade_admin::{pad_handle_result, BLOCK_SIZE, pad_query_result};
 use shade_admin::storage::{Item, Map};
 
 /// Maps user to permissions for which they have user.
@@ -47,7 +48,7 @@ pub fn execute(
     // Only the super user can execute anything on this contract.
     is_super(deps.storage, &info.sender)?;
     // Super user is assumed to have been verified by this point.
-    match msg {
+    let resp = Ok(match msg {
         ExecuteMsg::UpdateRegistry { action } => {
             try_update_registry(deps.storage, deps.api, action)
         }
@@ -55,7 +56,8 @@ pub fn execute(
         ExecuteMsg::TransferSuper { new_super } => try_transfer_super(deps, new_super),
         ExecuteMsg::SelfDestruct {} => try_self_destruct(deps),
         ExecuteMsg::ToggleStatus { new_status } => try_toggle_status(deps, new_status),
-    }
+    }?);
+    Ok(pad_handle_result(resp, BLOCK_SIZE)?)
 }
 
 fn is_valid_permission(permission: &str) -> AdminAuthResult<()> {
@@ -248,22 +250,22 @@ fn validate_permissions(permissions: &[String]) -> AdminAuthResult<()> {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> AdminAuthResult<QueryResponse> {
-    match msg {
-        QueryMsg::GetConfig {} => Ok(to_binary(&ConfigResponse {
+    let resp = Ok(match msg {
+        QueryMsg::GetConfig {} => to_binary(&ConfigResponse {
             super_admin: SUPER.load(deps.storage)?,
             status: STATUS.load(deps.storage)?,
-        })?),
-        QueryMsg::ValidateAdminPermission { permission, user } => Ok(to_binary(
+        })?,
+        QueryMsg::ValidateAdminPermission { permission, user } => to_binary(
             &query_validate_permission(deps, permission, user)?,
-        )?),
+        )?,
         QueryMsg::GetAdmins {} => {
             STATUS
                 .load(deps.storage)?
                 .not_shutdown()?
                 .not_under_maintenance()?;
-            Ok(to_binary(&AdminsResponse {
+            to_binary(&AdminsResponse {
                 admins: ADMINS.load(deps.storage)?,
-            })?)
+            })?
         }
         QueryMsg::GetPermissions { user } => {
             STATUS
@@ -271,11 +273,12 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> AdminAuthResult<QueryRespo
                 .not_shutdown()?
                 .not_under_maintenance()?;
             let validated_user = deps.api.addr_validate(user.as_str())?;
-            Ok(to_binary(&PermissionsResponse {
+            to_binary(&PermissionsResponse {
                 permissions: PERMISSIONS.load(deps.storage, &validated_user)?,
-            })?)
+            })?
         }
-    }
+    });
+    Ok(pad_query_result(resp, BLOCK_SIZE)?)
 }
 
 fn is_super(storage: &dyn Storage, address: &Addr) -> AdminAuthResult<()> {

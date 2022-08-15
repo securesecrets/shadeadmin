@@ -1,9 +1,9 @@
 use shade_protocol::{
-    c_std::{Addr, StdError},
-    cosmwasm_schema::{cw_serde, QueryResponses},
-    thiserror::Error,
     utils::{ExecuteCallback, InstantiateCallback, Query},
 };
+use cosmwasm_std::{Addr, StdError};
+use thiserror::Error;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 
 pub type AdminAuthResult<T> = core::result::Result<T, AdminAuthError>;
 
