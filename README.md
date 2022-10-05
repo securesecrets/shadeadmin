@@ -1,3 +1,5 @@
+# DEPRECATED AND MOVED INTO [MAIN PROTOCOL REPO](https://github.com/securesecrets/shade)
+
 # Shade Admin Contracts
 
 Shade Admin is used to centrally authorize the permissions for contracts across the Shade Protocol ecosystem. A contract can query the Shade Admin Contract to confirm whether the original caller has the relevant permissions against the calling contract. 
